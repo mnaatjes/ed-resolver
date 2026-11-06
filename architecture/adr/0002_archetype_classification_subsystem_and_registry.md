@@ -166,16 +166,38 @@ How should `ed-resolver` architect the classification subsystem to deliver sub-m
        return IngressClassifier(overrides=overrides)
    ```
 
-### 4.3 Classification Execution Timing
+### 4.4 Two-Phase Registry Codification Lifecycle
 
-* Classification occurs strictly **at the Ingress Boundary immediately after raw deserialization**:
-  1. `TelemetryIngressWorker` receives raw JSON bytes from the active `TelemetryIngressPort`.
-  2. The worker invokes `ed_models.parse_journal_event(json_dict)`.
-  3. The resulting typed dataclass instance is passed to `classifier.classify(event)`.
-  4. The returned archetype directly routes the event to the appropriate reducer:
-     * If `EPOCH_MILESTONE` $\rightarrow$ passes to `EpochMilestoneAggregator`.
-     * If `CONTEXT_MUTATOR` $\rightarrow$ passes to `ContextMutator`.
-     * If `None` (uncataloged or non-state event) $\rightarrow$ discarded or forwarded to audit logs.
+Because `ed-models` events exhibit heterogeneous semantics within single packages (e.g. `events/travel/` contains both `EPOCH_MILESTONE` events like `FsdJumpEvent` and transient informational events like `DockingRequested`), taxonomy resolution cannot rely on naive directory reflection.
+
+Classification codification is structured into two explicit phases:
+
+```
++─────────────────────────────────────────────────────────────────────────────+
+| PHASE 1: ARCHITECTURAL CONSENSUS (Design Plane)                             |
+| - Author `architecture/designs/archetype_taxonomy_matrix_v<version>.md`     |
+| - Exhaustively enumerates 100% of event models in `ed-models==vX.Y.Z`.      |
+| - Formal review and sign-off on ambiguous / composite game events.          |
++─────────────────────────────────────────────────────────────────────────────+
+                                      │
+                                      ▼ parsed by offline developer tool
++─────────────────────────────────────────────────────────────────────────────+
+| PHASE 2: OFFLINE CODE GENERATION (Tooling Plane)                            |
+| - Script: `scripts/generate_archetype_registry.py`                          |
+| - Reads approved Markdown matrix and inspects pinned `ed-models` package.   |
+| - Generates static, type-hinted `src/ed_resolver/.../registry.py`.          |
+| - Validated in CI via `tests/architecture/test_archetype_parity.py`.        |
++─────────────────────────────────────────────────────────────────────────────+
+```
+
+1. **Version-Pinned Master Architectural Registry (`architecture/designs/`):**
+   * Before generating code, an authoritative Markdown specification—pinned to a specific release version of `ed-models` (e.g. `architecture/designs/archetype_taxonomy_matrix_v0.2.1.md`)—must be authored and approved.
+   * Every event class across all 12 categories (`travel`, `station`, `trade`, `startup`, `odyssey`, `carrier`, `combat`, `exploration`, `powerplay`, `squadrons`, `other`, `status`) is explicitly assigned to one of the four archetypes or categorized as `PASSIVE / AUDIT_ONLY`.
+
+2. **Offline Bespoke Generator Tool (`scripts/generate_archetype_registry.py`):**
+   * Executed during development or dependency update workflows when upgrading `ed-models`.
+   * Reads the approved architectural Markdown matrix, cross-checks against `ed_models.core.domain.events`, and outputs the formatted, type-safe `DEFAULT_ARCHETYPE_REGISTRY` mapping dictionary in `src/ed_resolver/core/domain/classification/registry.py`.
+   * Eliminates runtime reflection overhead while maintaining deterministic, reviewable git diffs on all code updates.
 
 ---
 
@@ -183,17 +205,21 @@ How should `ed-resolver` architect the classification subsystem to deliver sub-m
 
 ### Positive
 * **Deterministic $O(1)$ Performance:** Type-based dictionary hashing eliminates repeated string parsing and regex matching on high-frequency streams.
+* **Human-Reviewed Taxonomy Governance:** Pinning the taxonomy matrix in `architecture/designs/` guarantees human architectural review for all ambiguous event classifications before code generation.
+* **Zero Runtime Overhead:** Code generation occurs offline in `scripts/`; process startup and tests require zero reflection or package crawling.
+* **Observable Git Diffs:** Upgrading `ed-models` versions produces transparent, reviewable diffs in both the Markdown matrix and the generated Python registry.
 * **Zero Model Coupling:** `ed-models` remains pure, passive, and unopinionated; archetype semantics are managed entirely within `ed-resolver`.
 * **Isolated Extension Points:** Custom applications or integration test doubles can inject archetype overrides via `container.build_ingress_classifier(overrides=...)` without mutating global state.
 * **Hexagonal Compliance:** The classifier is a pure, zero-I/O domain service with zero third-party dependencies, adhering strictly to architectural boundaries.
 
 ### Negative / Trade-offs
-* `DEFAULT_ARCHETYPE_REGISTRY` must be maintained alongside `ed-models` releases as new game events are introduced by Frontier Developments.
+* Bumping `ed-models` versions requires re-running `scripts/generate_archetype_registry.py` and reviewing the resulting diff against the Markdown matrix.
 * Events emitted by the game that are omitted from the registry resolve to `None` and are ignored by state reducers (mitigated by automated parity tests in `tests/architecture/test_archetype_parity.py`).
 
 ---
 
 ## 6. Validation and Next Steps
 
-1. Implement `DEFAULT_ARCHETYPE_REGISTRY` and `IngressClassifier` in `src/ed_resolver/core/domain/classification/`.
-2. Add automated architectural parity test (`tests/architecture/test_archetype_parity.py`) asserting that all milestone and loadout event models exported by `ed-models` are explicitly mapped.
+1. Author the initial version-pinned taxonomy matrix: `architecture/designs/archetype_taxonomy_matrix_v0.2.1.md`.
+2. Implement the offline code generator: `scripts/generate_archetype_registry.py`.
+3. Generate `src/ed_resolver/core/domain/classification/registry.py` and verify parity via `tests/architecture/test_archetype_parity.py`.
