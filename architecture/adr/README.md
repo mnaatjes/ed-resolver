@@ -11,4 +11,4 @@ This directory contains the immutable Architectural Decision Records (ADRs) gove
 
 ## Decision Log
 
-* [0001: Core Domain State Architecture and Dual-Modal Driving Adapters](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0001_core_domain_state_architecture_and_dual_modal_adapters.md)
+* [0001: Core Domain State Architecture and Unified Ingress Lifecycle](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0001_core_domain_state_architecture_and_unified_ingress_lifecycle.md)
