@@ -1,0 +1,63 @@
+version: "1.0.0"
+source_package: "ed-models"
+target_facade: "AmbientTelemetryFacade"
+
+predicates:
+  # Sub-Facade: location
+  is_docked:
+    sub_facade: "location"
+    root_alias: true
+    projected_snapshot: "LocationSnapshot"
+    projection_property: "docked"
+    fallback_value: false
+    description: "Evaluates whether the commander is currently docked at any station, planetary outpost, or fleet carrier."
+
+  in_supercruise:
+    sub_facade: "location"
+    root_alias: false
+    projected_snapshot: "LocationSnapshot"
+    projection_property: "in_supercruise"
+    fallback_value: false
+    description: "Evaluates whether the ship is traveling in supercruise."
+
+  on_surface:
+    sub_facade: "location"
+    root_alias: false
+    projected_snapshot: "LocationSnapshot"
+    projection_property: "on_surface"
+    fallback_value: false
+    description: "Evaluates whether the vessel is touched down on a planetary body surface."
+
+  # Sub-Facade: vessel
+  is_on_foot:
+    sub_facade: "vessel"
+    root_alias: true
+    projected_snapshot: "VesselSnapshot"
+    projection_property: "is_on_foot"
+    fallback_value: false
+    description: "Evaluates whether the commander is disembarked on foot in an Odyssey environment."
+
+  is_in_srv:
+    sub_facade: "vessel"
+    root_alias: false
+    projected_snapshot: "VesselSnapshot"
+    projection_property: "is_in_srv"
+    fallback_value: false
+    description: "Evaluates whether the commander is currently operating a surface reconnaissance vehicle."
+
+  # Sub-Facade: flight
+  is_gear_down:
+    sub_facade: "flight"
+    root_alias: false
+    projected_snapshot: "FlightModeSnapshot"
+    projection_property: "landing_gear_down"
+    fallback_value: false
+    description: "Evaluates whether ship landing gear is currently extended."
+
+  are_hardpoints_deployed:
+    sub_facade: "flight"
+    root_alias: false
+    projected_snapshot: "FlightModeSnapshot"
+    projection_property: "hardpoints_deployed"
+    fallback_value: false
+    description: "Evaluates whether ship weapon hardpoints are deployed."

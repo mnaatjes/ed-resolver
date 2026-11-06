@@ -1,0 +1,174 @@
+version: "1.0.0"
+source_package: "ed-models"
+target_facade: "AmbientTelemetryFacade"
+
+snapshots:
+  LocationSnapshot:
+    sub_facade: "location"
+    method: "snapshot"
+    description: "Current spatial coordinates, celestial body context, and docking status"
+    milestone_events:
+      - model: "FSDJump"
+        semantics: "full_replacement"
+      - model: "Location"
+        semantics: "full_replacement"
+      - model: "CarrierJump"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "Docked"
+        patches: ["station_name", "station_type", "docked"]
+      - model: "Undocked"
+        patches: ["station_name", "station_type", "docked"]
+      - model: "SupercruiseExit"
+        patches: ["body_name", "body_id", "in_supercruise"]
+      - model: "SupercruiseEntry"
+        patches: ["in_supercruise"]
+      - model: "Touchdown"
+        patches: ["on_surface", "body_name"]
+      - model: "Liftoff"
+        patches: ["on_surface"]
+    properties:
+      system_name:
+        type: "str"
+        nullable: false
+        sources: ["FSDJump.StarSystem", "Location.StarSystem", "CarrierJump.StarSystem"]
+      system_address:
+        type: "int"
+        nullable: false
+        sources: ["FSDJump.SystemAddress", "Location.SystemAddress", "CarrierJump.SystemAddress"]
+      star_pos:
+        type: "tuple[float, float, float]"
+        nullable: false
+        sources: ["FSDJump.StarPos", "Location.StarPos"]
+      body_name:
+        type: "str"
+        nullable: true
+        sources: ["SupercruiseExit.Body", "Location.Body", "FSDJump.Body", "Touchdown.Body"]
+      body_id:
+        type: "int"
+        nullable: true
+        sources: ["SupercruiseExit.BodyID", "Location.BodyID", "FSDJump.BodyID"]
+      station_name:
+        type: "str"
+        nullable: true
+        sources: ["Docked.StationName", "Location.StationName"]
+      station_type:
+        type: "str"
+        nullable: true
+        sources: ["Docked.StationType", "Location.StationType"]
+      docked:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["Docked", "Undocked", "Location.Docked"]
+      in_supercruise:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["SupercruiseEntry", "SupercruiseExit"]
+      on_surface:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["Touchdown", "Liftoff"]
+
+  VesselSnapshot:
+    sub_facade: "vessel"
+    method: "snapshot"
+    description: "Current vessel, active loadout, suit, and SRV operational mode"
+    milestone_events:
+      - model: "Loadout"
+        semantics: "full_replacement"
+      - model: "ShipyardSwap"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "ModuleBuy"
+        patches: ["modules"]
+      - model: "ModuleSell"
+        patches: ["modules"]
+      - model: "ModuleSwap"
+        patches: ["modules"]
+      - model: "SuitLoadout"
+        patches: ["suit_name", "suit_modules"]
+      - model: "Embark"
+        patches: ["is_on_foot", "is_in_srv"]
+      - model: "Disembark"
+        patches: ["is_on_foot", "is_in_srv"]
+    properties:
+      ship_name:
+        type: "str"
+        nullable: true
+        sources: ["Loadout.ShipName", "ShipyardSwap.ShipType"]
+      ship_ident:
+        type: "str"
+        nullable: true
+        sources: ["Loadout.ShipIdent"]
+      ship_type:
+        type: "str"
+        nullable: true
+        sources: ["Loadout.Ship", "ShipyardSwap.ShipType"]
+      hull_value:
+        type: "int"
+        nullable: true
+        sources: ["Loadout.HullValue"]
+      modules_value:
+        type: "int"
+        nullable: true
+        sources: ["Loadout.ModulesValue"]
+      is_on_foot:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["Disembark", "Embark", "SuitLoadout"]
+      is_in_srv:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["LaunchSRV", "DockSRV"]
+
+  FlightModeSnapshot:
+    sub_facade: "flight"
+    method: "snapshot"
+    description: "Continuous flight parameters, gear, hardpoints, and 1 Hz status toggles"
+    milestone_events:
+      - model: "StatusTelemetry"
+        semantics: "scalar_gauge_quantize"
+    mutator_events:
+      - model: "StatusFlags"
+        patches: ["landing_gear_down", "hardpoints_deployed", "flight_assist_off", "night_vision"]
+      - model: "StatusFlags2"
+        patches: ["glide_mode", "telepresence"]
+    properties:
+      in_supercruise:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      landing_gear_down:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      hardpoints_deployed:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      flight_assist_off:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      night_vision:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      fuel_main:
+        type: "float"
+        nullable: true
+        sources: ["StatusTelemetry.fuel.fuel_main"]
+      fuel_reservoir:
+        type: "float"
+        nullable: true
+        sources: ["StatusTelemetry.fuel.fuel_reservoir"]

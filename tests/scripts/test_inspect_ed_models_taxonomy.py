@@ -6,6 +6,7 @@ from scripts.inspect_ed_models_taxonomy import (
     DiscoveredDomain,
     DiscoveredModel,
     crawl_ed_models_taxonomy,
+    emit_taxonomy_yaml,
     format_domain_summary,
 )
 
@@ -63,3 +64,26 @@ def test_format_domain_summary() -> None:
     assert "FsdJumpEvent" in summary
     assert "Categories: 1" in summary
     assert "Models: 1" in summary
+
+
+def test_emit_taxonomy_yaml() -> None:
+    """Verify that YAML emitter produces valid YAML mapping all models."""
+    import yaml
+
+    domain = DiscoveredDomain(
+        category="travel",
+        module_path="ed_models.core.domain.events.travel",
+        models=[
+            DiscoveredModel(
+                name="FSDJump",
+                module="ed_models.core.domain.events.travel",
+                fields={"StarSystem": "str"},
+            )
+        ],
+    )
+    yaml_str = emit_taxonomy_yaml([domain], version="0.2.1")
+    parsed = yaml.safe_load(yaml_str)
+    assert parsed["version"] == "0.2.1"
+    assert "travel" in parsed["categories"]
+    assert "FSDJump" in parsed["categories"]["travel"]["models"]
+    assert parsed["categories"]["travel"]["models"]["FSDJump"]["archetype"] == "EPOCH_MILESTONE"

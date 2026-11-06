@@ -136,8 +136,7 @@ def format_domain_summary(domains: list[DiscoveredDomain]) -> str:
     """Format discovered domains and models into a human-readable summary table."""
     total_models = sum(len(d.models) for d in domains)
     header = (
-        f"=== Discovered ed-models Domains (Categories: {len(domains)}, "
-        f"Models: {total_models}) ==="
+        f"=== Discovered ed-models Domains (Categories: {len(domains)}, Models: {total_models}) ==="
     )
     lines: list[str] = [
         header,
@@ -154,10 +153,87 @@ def format_domain_summary(domains: list[DiscoveredDomain]) -> str:
     return "\n".join(lines)
 
 
+def emit_taxonomy_yaml(domains: list[DiscoveredDomain], version: str = "0.2.1") -> str:
+    """Generate structured YAML mapping 100% of discovered ed-models classes to archetypes."""
+    lines: list[str] = [
+        f'version: "{version}"',
+        'source_package: "ed-models"',
+        "categories:",
+    ]
+
+    # Deterministic default heuristic mapping per category
+    category_defaults = {
+        "travel": "EPOCH_MILESTONE",
+        "station": "CONTEXT_MUTATOR",
+        "carrier": "CONTEXT_MUTATOR",
+        "startup": "EPOCH_MILESTONE",
+        "odyssey": "CONTEXT_MUTATOR",
+        "trade": "CONTEXT_MUTATOR",
+        "combat": "CONTEXT_MUTATOR",
+        "exploration": "PASSIVE",
+        "powerplay": "CONTEXT_MUTATOR",
+        "squadrons": "PASSIVE",
+        "other": "PASSIVE",
+        "status": "EDGE_TRANSITION",
+        "base": "PASSIVE",
+    }
+
+    # Known specific archetype overrides
+    known_overrides = {
+        "FSDJump": "EPOCH_MILESTONE",
+        "Location": "EPOCH_MILESTONE",
+        "CarrierJump": "EPOCH_MILESTONE",
+        "Docked": "EPOCH_MILESTONE",
+        "Undocked": "EPOCH_MILESTONE",
+        "SupercruiseEntry": "EPOCH_MILESTONE",
+        "SupercruiseExit": "EPOCH_MILESTONE",
+        "Touchdown": "EPOCH_MILESTONE",
+        "Liftoff": "EPOCH_MILESTONE",
+        "Loadout": "CONTEXT_MUTATOR",
+        "StatusFlags": "EDGE_TRANSITION",
+        "StatusFlags2": "EDGE_TRANSITION",
+        "StatusTelemetry": "METRIC_QUANTIZER",
+    }
+
+    for d in sorted(domains, key=lambda x: x.category):
+        lines.append(f"  {d.category}:")
+        lines.append(f'    module: "{d.module_path}"')
+        lines.append("    models:")
+        default_archetype = category_defaults.get(d.category, "PASSIVE")
+        for m in sorted(d.models, key=lambda x: x.name):
+            archetype = known_overrides.get(m.name, default_archetype)
+            lines.append(f"      {m.name}:")
+            lines.append(f'        archetype: "{archetype}"')
+            lines.append(f"        fields_count: {len(m.fields)}")
+
+    return "\n".join(lines) + "\n"
+
+
 def main() -> None:
     """Main execution entrypoint."""
+    import argparse
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(
+        description="Inspect ed-models and emit consensus YAML matrices."
+    )
+    parser.add_argument(
+        "--emit-yaml",
+        action="store_true",
+        help="Emit YAML matrix files to architecture/designs/matrix/",
+    )
+    args = parser.parse_args()
+
     domains = crawl_ed_models_taxonomy()
-    print(format_domain_summary(domains))
+    if args.emit_yaml:
+        matrix_dir = Path("architecture/designs/matrix")
+        matrix_dir.mkdir(parents=True, exist_ok=True)
+        taxonomy_path = matrix_dir / "archetype_taxonomy_v0.2.1.yaml"
+        content = emit_taxonomy_yaml(domains, version="0.2.1")
+        taxonomy_path.write_text(content, encoding="utf-8")
+        print(f"Emitted: {taxonomy_path} ({len(domains)} categories)")
+    else:
+        print(format_domain_summary(domains))
 
 
 if __name__ == "__main__":
