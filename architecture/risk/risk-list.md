@@ -1,0 +1,74 @@
+---
+title: "Master Risk Register"
+tags: ["architecture", "risk", "governance", "boehm", "unified-process", "ed-resolver"]
+created_at: "2026-11-06"
+last_updated_at: "2026-11-06"
+---
+
+# Master Risk Register
+
+This document tracks and quantifies the architectural, technical, and operational risks for `ed-resolver` using Barry Boehm's classical Risk Exposure ($RE$) metric:
+
+$$RE = P \times I$$
+
+* **Probability ($P$):** Integer scale `1` (Extremely Unlikely) to `5` (Near Certainty).
+* **Impact ($I$):** Integer scale `1` (Negligible / Cosmetic) to `5` (Catastrophic / Outage / Data Corruption).
+* **Risk Exposure ($RE$):** Product range `1` to `25`.
+  * **Critical Exposure ($RE \ge 16$):** Architectural blocker requiring immediate mitigation spike or prototype prior to committing to construction.
+  * **Moderate Exposure ($9 \le RE \le 15$):** Active monitoring with explicit mitigation plan in Elaboration.
+  * **Low Exposure ($RE < 9$):** Documented; managed procedurally via standard tests.
+
+---
+
+## 1. Active Risk Matrix
+
+| Risk ID | Title | Cat. | $P$ | $I$ | $RE$ | Exposure Level | Status |
+| :--- | :--- | :--- | :---: | :---: | :---: | :--- | :--- |
+| **RISK-01** | Cold-Start Unseeded State & Null Dereference | Arch | 4 | 4 | **16** | 🔴 Critical | Active (ADR 0001) |
+| **RISK-02** | High-Frequency Status Tick Concurrency Contention | Perf | 3 | 4 | **12** | 🟡 Moderate | Active |
+| **RISK-03** | Staging Buffer Memory Leakage Without TTL Eviction | Res | 3 | 4 | **12** | 🟡 Moderate | Active |
+| **RISK-04** | Hexagonal Core Boundary Leakage (I/O & Async Contagion) | Arch | 3 | 4 | **12** | 🟡 Moderate | Active |
+| **RISK-05** | Journal Rotation & Lock Collisions Across File Watchers | OS | 2 | 3 | **6** | 🟢 Low | Active |
+
+---
+
+## 2. Risk Detail & Mitigation Plans
+
+### RISK-01: Cold-Start Unseeded State & Null Dereference
+* **Description:** When consumers invoke `get_location()` or `get_vessel()` immediately upon application launch mid-session before any Epoch Milestone (`Location` or `FSDJump`) has arrived in the live stream, uninitialized state could trigger `AttributeError` or unexpected exceptions downstream.
+* **Scoring:** $P=4, I=4 \rightarrow RE=16$ (Critical).
+* **Mitigation Plan:**
+  1. Enforce ADR 0001 Hybrid Strategy D + Strategy B: perform a fast reverse journal scan during ingress initialization to recover the most recent milestone and loadout from the active log file before query methods open.
+  2. Define strict return types as explicit nullable dataclasses (`LocationSnapshot | None`, `VesselSnapshot | None`), compelling callers to implement null-safe gating.
+  3. Validate unseeded cold starts, partial log seeds, and fully hydrated states in automated unit tests.
+
+### RISK-02: High-Frequency Status Tick Concurrency Contention
+* **Description:** In multi-threaded or async topologies where a background ingestion loop updates the in-memory state at 1 Hz (`Status.json`) while concurrent read requests arrive from WebSockets, HTTP controllers, or TUI render loops, race conditions could lead to torn reads or thread lock starvation.
+* **Scoring:** $P=3, I=4 \rightarrow RE=12$ (Moderate).
+* **Mitigation Plan:**
+  1. Immutable Snapshot Replacement: State is stored as frozen dataclass instances (`@dataclass(frozen=True)`). Readers acquire an atomic reference to an immutable snapshot without holding long read locks.
+  2. Implement fine-grained read-copy-update (RCU) or single-writer / multiple-reader (`RWLock` / atomic pointer swap) concurrency primitives in the state store.
+
+### RISK-03: Staging Buffer Memory Leakage Without TTL Eviction
+* **Description:** Out-of-band market or outfitting dumps (`Market.json`, `Outfitting.json`) held in accumulator buffers waiting for missing coordinates or system addresses could leak memory unbounded if the player logs out or disconnects before the required milestone event is emitted.
+* **Scoring:** $P=3, I=4 \rightarrow RE=12$ (Moderate).
+* **Mitigation Plan:**
+  1. Implement deterministic TTL (Time-To-Live) sliding expiry windows (e.g., 300 seconds) on all staged contract packages.
+  2. Cap maximum concurrent staged packages in the accumulator using an LRU cache or ring buffer with hard memory ceilings.
+  3. Emit audit ledger events upon buffer expiration to alert operators of dropped packages.
+
+### RISK-04: Hexagonal Core Boundary Leakage (I/O & Async Contagion)
+* **Description:** Inadvertently introducing file path manipulation, HTTP server objects, or `asyncio` primitives into `src/ed_resolver/core/` violates hexagonal purity, making domain logic untestable without external runtimes and preventing synchronous library use.
+* **Scoring:** $P=3, I=4 \rightarrow RE=12$ (Moderate).
+* **Mitigation Plan:**
+  1. Keep `src/ed_resolver/core/` 100% synchronous standard library Python with zero network, filesystem, or async framework imports.
+  2. Confine all filesystem cursors, journal readers, and network protocols strictly to `src/ed_resolver/adapters/`.
+  3. Enforce architectural boundaries automatically via `import-linter` contracts and `pytest-archon` in `scripts/verify.py`.
+
+### RISK-05: Journal Rotation & Lock Collisions Across File Watchers
+* **Description:** When the Frontier client rotates journal files (e.g. crossing midnight UTC or jumping game modes), file watchers attempting to hold exclusive read locks could encounter OS permission errors (`EBUSY` / `AccessDenied`) or miss lines appended during the rotation handoff.
+* **Scoring:** $P=2, I=3 \rightarrow RE=6$ (Low).
+* **Mitigation Plan:**
+  1. Ingress file watchers must open files in non-exclusive, shared read mode (`os.O_RDONLY | os.O_NONBLOCK`).
+  2. Detect file inode and size shrink transitions to handle file truncation and rotation smoothly.
+  3. Rely on tested `ed-telemetry` ingress adapters rather than custom ad-hoc file polling loops.
