@@ -280,6 +280,34 @@ Payload deserialization errors, malformed JSON, and unexpected game events are s
 
 ---
 
+### 4.7 Scope, Boundary Governance & Automated Enforcement Mechanisms
+
+To guarantee that `ed-resolver` remains purely focused on domain state resolution and prevents architectural erosion across fleet boundaries:
+
+#### 1. Prohibited Fleet Behaviors
+
+| Prohibited Concern | Rationale | Governing Authority |
+| :--- | :--- | :--- |
+| **Direct Journal / File Tailing** | Polling files, watching directories, handling journal rotation, and OS file locking belong 100% to `ed-telemetry`. | ADR 0005 & Fleet Ingress Charter |
+| **File-Watching Dependencies** | `watchdog`, `inotify`, `win32file`, or custom disk polling must never be imported into `ed-resolver`. | Hexagonal Boundary Policy |
+| **Worker Leakage into Domain Core** | `core/domain/` must remain pure, synchronous, and zero-dependency. Core entities must never import `TelemetryIngressWorker` or `asyncio`. | ADR 0001 & ADR 0004 |
+| **Raw Transport Leakage to Reducers** | HTTP requests, SSE connection objects, or raw network bytes must never be passed to domain reducers. Only pure typed `ed-models` events and `TelemetryArchetype` values enter the core. | Hexagonal Port Isolation |
+
+#### 2. Automated Quality Gate Enforcement Rules
+
+These scope boundaries are actively protected by automated CI quality gates (`scripts/verify.py`):
+
+1. **AST Compliance Test (`test_no_filesystem_watchers_in_ingress_adapters`):**
+   * Inspects AST import trees across `src/ed_resolver/adapters/driven/ingress/` and `src/ed_resolver/adapters/driven/runtime/`.
+   * Fails the test suite if forbidden file-watching modules (`watchdog`, `inotify`, `win32file`, `win32event`) or raw file-discovery utilities are imported.
+2. **Import-Linter Layer Contracts (`.importlinter`):**
+   * Enforces that `ed_resolver.core.domain` and `ed_resolver.core.ports` never import `ed_resolver.adapters.driven.runtime`.
+   * Guarantees that dependencies point strictly inward toward the domain core.
+3. **Pure Packaging Verification (`pyproject.toml`):**
+   * Asserts that `ed-telemetry` is only ever declared under `[project.optional-dependencies]` (`telemetry = ["ed-telemetry"]`) and is never placed in the core `dependencies` array.
+
+---
+
 ## 5. Consequences
 
 ### Positive
