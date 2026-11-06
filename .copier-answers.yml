@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier
+_commit: v0.1.6
+_src_path: /home/michael/src/github.com/mnaatjes/python-hexagonal-template
+author_email: michael.naatjes87@gmail.com
+author_name: Michael Naatjes
+include_architecture_governance: true
+package_name: ed_resolver
+project_description: In-memory domain state synthesizer, ambient telemetry facade,
+    and dispatch daemon for Elite Dangerous
+project_name: Elite Dangerous Telemetry Resolver
+project_slug: ed-resolver
+python_version: '3.13'
