@@ -107,20 +107,59 @@ A definitive architectural decision is required to formalize the role, taxonomy,
 
 ---
 
-### 4.2 Worker Lifecycle & Execution Model
+### 4.2 Worker Interface, Lifecycle & Execution Model
 
-The worker manages a single supervised `asyncio.Task`:
+The worker manages a single supervised `asyncio.Task` and implements a clean interface across configuration, state inspection, and lifecycle operations:
 
-* **`start() -> None`:**
-  1. Validates that the worker is not already running.
-  2. Spawns an internal `asyncio.Task` executing the continuous ingress loop `_run_loop()`.
-  3. Emits a lifecycle notification indicating the worker has started.
-* **`stop(timeout: float = 5.0) -> None`:**
-  1. Signals cancellation to the loop task.
-  2. Awaits task termination within the specified timeout.
-  3. Closes any open ingress stream resources cleanly.
-* **`is_running -> bool`:**
-  Returns whether the background task is currently active.
+```python
+class TelemetryIngressWorker:
+    """Asynchronous driven runtime worker that continuously drains ingress streams into core reducers."""
+
+    def __init__(
+        self,
+        ingress_port: TelemetryIngressPort,
+        classifier: IngressClassifier,
+        reducer_pipeline: StateReducerPipeline,
+        quarantine_queue: QuarantineDeadLetterQueue | None = None,
+    ) -> None: ...
+
+    @property
+    def is_running(self) -> bool: ...
+
+    @property
+    def metrics(self) -> IngressWorkerMetrics: ...
+
+    async def start(self) -> None: ...
+
+    async def stop(self, timeout: float = 5.0) -> None: ...
+
+    async def process_envelope(self, envelope: RawTelemetryEnvelope) -> None: ...
+```
+
+#### Detailed Operations & Role Specifications
+
+1. **Initialization Parameters (`__init__`):**
+   * **`ingress_port: TelemetryIngressPort`:** The stream source to consume envelopes from (e.g., local disk journal tailer, remote WebSocket stream, or in-memory test queue).
+   * **`classifier: IngressClassifier`:** The domain classifier that resolves event archetypes (`TelemetryArchetype`) via the generated registry.
+   * **`reducer_pipeline: StateReducerPipeline`:** The pipeline of pure synchronous domain reducers updating the state store.
+   * **`quarantine_queue: QuarantineDeadLetterQueue | None`:** Optional dead-letter queue for isolating unparseable or schema-drifted payloads without failing the stream.
+
+2. **Observable Properties:**
+   * **`is_running -> bool`:** Returns `True` if the worker's background task is actively running and processing events; `False` if stopped or unstarted.
+   * **`metrics -> IngressWorkerMetrics`:** Exposes diagnostic counters (`envelopes_received`, `events_reduced`, `quarantined_count`, `last_event_at`) for observability and health checks.
+
+3. **Public Methods:**
+   * **`async def start() -> None`:**
+     Validates the worker is not already running, establishes stream connection on `ingress_port`, and launches `_run_loop()` in a supervised `asyncio.Task`.
+   * **`async def stop(timeout: float = 5.0) -> None`:**
+     Signals cancellation to the background task, awaits clean task completion within the timeout, and gracefully closes `ingress_port` resources.
+   * **`async def process_envelope(envelope: RawTelemetryEnvelope) -> None`:**
+     Executes a single end-to-end processing step (deserialization, classification, reduction, quarantine on failure). Used by `_run_loop()` and available for deterministic testing or manual stepping.
+
+4. **Internal Helper Responsibilities:**
+   * **`async def _run_loop() -> None`:** The continuous stream-drain loop consuming from `ingress_port` and delegating to `process_envelope`.
+   * **`def _deserialize(raw_payload: str) -> BaseEvent | None`:** Invokes `ed-models` deserializer.
+   * **`def _quarantine(envelope: RawTelemetryEnvelope, error: Exception) -> None`:** Routes failed payloads to `quarantine_queue` with error context and updates error metrics.
 
 ---
 
