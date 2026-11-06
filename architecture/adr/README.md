@@ -1,0 +1,14 @@
+---
+title: "Architectural Decision Records Index"
+tags: ["adr", "architecture", "index"]
+created_at: "2026-11-06"
+last_updated_at: "2026-11-06"
+---
+
+# Architectural Decision Records Index
+
+This directory contains the immutable Architectural Decision Records (ADRs) governing `ed-resolver`, structured according to MADR 3.0.
+
+## Decision Log
+
+* [0001: Core Domain State Architecture and Tri-Modal Driving Adapters](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0001_core_domain_state_architecture_and_tri_modal_adapters.md)
