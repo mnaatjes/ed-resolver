@@ -166,18 +166,19 @@ In alignment with the methodology established in ADR 0002, the implementation of
 
 ```
 +─────────────────────────────────────────────────────────────────────────────+
-| PHASE 1: ARCHITECTURAL CONSENSUS MATRICES (Structured YAML Specification)   |
+| PHASE 1: SYSTEMATIC INTROSPECTION & CONSENSUS MATRICES (YAML Plane)         |
 |                                                                             |
-| Author and review two version-pinned governance YAML matrices in            |
-| `architecture/designs/matrix/`:                                             |
+| 1. Execute `scripts/inspect_ed_models_taxonomy.py`:                         |
+|    - Inspects released `ed-models` package (`ed-models==v0.2.1`).           |
+|    - Systematically crawls all 12 domain categories and status models.      |
+|    - Discovers 100% of concrete event classes and typed field attributes.   |
+|    - Validated in `tests/scripts/test_inspect_ed_models_taxonomy.py`.       |
 |                                                                             |
-| 1. `architecture/designs/matrix/facade_compound_snapshots_v<version>.yaml`  |
-|    - Defines every compound snapshot DTO (name, fields, types, sources).    |
-|    - Validated by pre-commit check-yaml and Pydantic models.                |
-|                                                                             |
-| 2. `architecture/designs/matrix/facade_atomic_predicates_v<version>.yaml`   |
-|    - Defines every top-level boolean helper, its projected snapshot, and    |
-|      its fallback evaluation when unseeded.                                 |
+| 2. Author and review version-pinned governance YAML matrices in             |
+|    `architecture/designs/matrix/`:                                          |
+|    - `architecture/designs/matrix/facade_compound_snapshots_v<version>.yaml` |
+|    - `architecture/designs/matrix/facade_atomic_predicates_v<version>.yaml`  |
+|    - Validated by pre-commit `check-yaml` and Pydantic schema models.       |
 +─────────────────────────────────────────────────────────────────────────────+
                                        │
                                        ▼ Architectural Approval (Review Gate)
@@ -192,6 +193,14 @@ In alignment with the methodology established in ADR 0002, the implementation of
 
 Under this decision, **no code implementation or dataclass generation may begin until both Phase 1 YAML matrices are authored, reviewed, and approved**.
 
+### 4.5 Deterministic Domain Crawling & Generation Script
+
+To guarantee zero omission of `ed-models` events and properties:
+* The inspection script `scripts/inspect_ed_models_taxonomy.py` imports the officially released `ed-models` library dependency (pinned in `pyproject.toml` via `git+https://github.com/mnaatjes/ed-models.git@v0.2.1`), never relying on uncommitted local paths.
+* It systematically visits all module paths under `ed_models.core.domain.events` (`travel`, `station`, `trade`, `startup`, `odyssey`, `carrier`, `combat`, `exploration`, `powerplay`, `squadrons`, `other`) and `ed_models.core.domain.status`.
+* It extracts each class name, module hierarchy, and dataclass field annotations into structured dictionary output, ensuring full coverage.
+* The script itself is unit-tested under `tests/scripts/test_inspect_ed_models_taxonomy.py` prior to operational execution.
+
 ---
 
 ## 5. Consequences
@@ -201,6 +210,7 @@ Under this decision, **no code implementation or dataclass generation may begin 
 * **Deterministic Non-Divergence:** Because predicates project directly from compound snapshots, there is zero possibility of torn reads or conflicting answers between getters and booleans.
 * **Bound API Surface:** The qualification criteria in Section 4.3 prevent arbitrary method bloat across the facade.
 * **Schema Validation & Tooling Ergonomics:** Storing matrices as structured YAML enables automated validation (`check-yaml`, Pydantic models) and seamless programmatic ingestion without fragile markdown table scraping.
+* **Zero Omission Guarantee:** Systematic package crawling against released `ed-models` ensures all upstream domains are accounted for in the generated YAML matrix.
 * **Auditability & Traceability:** YAML matrices provide an unambiguous, version-controlled ledger of all supported query properties and their provenance.
 
 ### Negative / Trade-offs
@@ -213,7 +223,10 @@ Under this decision, **no code implementation or dataclass generation may begin 
 
 1. Update the Master Risk Register (`architecture/risk/risk-list.md`) to capture potential predicate divergence risks.
 2. Update the Use-Case catalog (`architecture/use-cases/`) to reflect predicate queries.
-3. Author Phase 1 Consensus Matrices under `architecture/designs/matrix/`:
+3. Implement and test the taxonomy inspection script:
+   * Test suite: `tests/scripts/test_inspect_ed_models_taxonomy.py`
+   * Tool: `scripts/inspect_ed_models_taxonomy.py`
+4. Author Phase 1 Consensus Matrices under `architecture/designs/matrix/`:
    * `architecture/designs/matrix/facade_compound_snapshots_v1.0.0.yaml`
    * `architecture/designs/matrix/facade_atomic_predicates_v1.0.0.yaml`
-4. Implement `AmbientTelemetryFacade` and snapshot models in `src/ed_resolver/` once matrices are approved.
+5. Implement `AmbientTelemetryFacade` and snapshot models in `src/ed_resolver/` once matrices are approved.
