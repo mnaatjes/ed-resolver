@@ -195,14 +195,34 @@ class RawTelemetryEnvelope:
 * **Pure Isolation:** External transport models (e.g. `ed-telemetry` envelopes) are unpacked at the adapter boundary before reaching the worker.
 * **Immutability & Performance:** `frozen=True` prevents downstream mutation, while `slots=True` minimizes memory overhead during high-frequency telemetry bursts.
 
+### 4.4 Ingress Adapter Strategy (`TelemetryIngressPort` Implementations)
+
+To eliminate code duplication across the *Elite Dangerous* software fleet, `ed-resolver` does **not** re-implement filesystem tailing, directory polling, or journal rotation locks—those responsibilities belong strictly to `ed-telemetry`.
+
+Instead, `TelemetryIngressPort` is satisfied by three designated driven adapters:
+
+1. **Primary Adapter (`EdTelemetryNetworkAdapter`):**
+   * **Role:** Connects across the LAN or loopback to a running `ed-telemetry` streaming service via HTTP/SSE or WebSocket.
+   * **Usage:** Default production deployment for multi-machine setups (e.g. gaming PC streaming to a Linux/Docker host) or standalone daemon operation.
+   * **Mechanism:** Unpacks `ed-telemetry` wire DTOs and wraps their inner `payload_json` strings into clean `RawTelemetryEnvelope` instances.
+
+2. **Secondary Adapter (`EdTelemetryInProcessAdapter`):**
+   * **Role:** For all-in-one desktop use without requiring a standalone daemon process.
+   * **Distribution:** Enabled via optional extra: `pip install ed-resolver[telemetry]`.
+   * **Mechanism:** Passive listener connecting directly to `ed-telemetry`'s in-memory stream buffer (`GetTelemetryStreamUseCase`). It does **not** manage or control `ed-telemetry`'s filesystem lifecycle; it simply consumes from the buffer inside the same memory space.
+
+3. **Test Adapter (`MemoryQueueAdapter`):**
+   * **Role:** Lightweight in-memory queue adapter for deterministic unit and architectural compliance tests.
+   * **Usage:** Provides zero-I/O test execution without network sockets, background threads, or filesystem handles.
+
 ---
 
-### 4.4 Ingress Pipeline Operations
+### 4.5 Ingress Pipeline Operations
 
 Inside `_run_loop()`, each incoming event traverses four sequential phases:
 
 1. **Stream Ingestion:**
-   Consumes `RawTelemetryEnvelope` items asynchronously from the injected `TelemetryIngressPort` implementation (e.g., `DiskJournalStreamAdapter`, `WebSocketStreamAdapter`, or `MemoryQueueStreamAdapter`).
+   Consumes `RawTelemetryEnvelope` items asynchronously from the configured `TelemetryIngressPort` implementation (`EdTelemetryNetworkAdapter`, `EdTelemetryInProcessAdapter`, or `MemoryQueueAdapter`).
 2. **Permissive Deserialization & Quarantine (DLQ):**
    * Uses `ed-models` to deserialize payload JSON into typed event DTOs.
    * If parsing fails (unknown event structure, corrupted JSON, or schema validation error), the raw envelope is not dropped silently; it is routed directly to the `QuarantineDeadLetterQueue` with error diagnostics. The worker continues executing without crashing.
@@ -213,7 +233,9 @@ Inside `_run_loop()`, each incoming event traverses four sequential phases:
    * Updates frozen domain snapshots atomically in the `DomainStateStore`.
    * Dispatches change notifications to registered subscribers via `TelemetryNotificationPort`.
 
-### 4.5 Operational Exception Model vs. Query Null-Return Strategy
+---
+
+### 4.6 Operational Exception Model vs. Query Null-Return Strategy
 
 `ed-resolver` strictly decouples **state query responses** from **runtime operational failures**:
 
