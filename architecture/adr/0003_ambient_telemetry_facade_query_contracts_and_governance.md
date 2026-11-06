@@ -166,15 +166,16 @@ In alignment with the methodology established in ADR 0002, the implementation of
 
 ```
 +─────────────────────────────────────────────────────────────────────────────+
-| PHASE 1: ARCHITECTURAL CONSENSUS MATRICES (Markdown Specification)          |
+| PHASE 1: ARCHITECTURAL CONSENSUS MATRICES (Structured YAML Specification)   |
 |                                                                             |
-| Author and review two version-pinned governance matrices in                 |
-| `architecture/designs/`:                                                    |
+| Author and review two version-pinned governance YAML matrices in            |
+| `architecture/designs/matrix/`:                                             |
 |                                                                             |
-| 1. `architecture/designs/facade_compound_snapshots_matrix_v<version>.md`     |
+| 1. `architecture/designs/matrix/facade_compound_snapshots_v<version>.yaml`  |
 |    - Defines every compound snapshot DTO (name, fields, types, sources).    |
+|    - Validated by pre-commit check-yaml and Pydantic models.                |
 |                                                                             |
-| 2. `architecture/designs/facade_atomic_predicates_matrix_v<version>.md`      |
+| 2. `architecture/designs/matrix/facade_atomic_predicates_v<version>.yaml`   |
 |    - Defines every top-level boolean helper, its projected snapshot, and    |
 |      its fallback evaluation when unseeded.                                 |
 +─────────────────────────────────────────────────────────────────────────────+
@@ -189,7 +190,7 @@ In alignment with the methodology established in ADR 0002, the implementation of
 +─────────────────────────────────────────────────────────────────────────────+
 ```
 
-Under this decision, **no code implementation or dataclass generation may begin until both Phase 1 Markdown matrices are authored, reviewed, and approved**.
+Under this decision, **no code implementation or dataclass generation may begin until both Phase 1 YAML matrices are authored, reviewed, and approved**.
 
 ---
 
@@ -199,10 +200,11 @@ Under this decision, **no code implementation or dataclass generation may begin 
 * **Ergonomic Clarity:** Callers have clean, single-line access to major game context predicates (`if facade.is_on_foot(): ...`) without verbose unpacking.
 * **Deterministic Non-Divergence:** Because predicates project directly from compound snapshots, there is zero possibility of torn reads or conflicting answers between getters and booleans.
 * **Bound API Surface:** The qualification criteria in Section 4.3 prevent arbitrary method bloat across the facade.
-* **Auditability & Traceability:** Markdown matrices provide an unambiguous, human-readable ledger of all supported query properties and their provenance.
+* **Schema Validation & Tooling Ergonomics:** Storing matrices as structured YAML enables automated validation (`check-yaml`, Pydantic models) and seamless programmatic ingestion without fragile markdown table scraping.
+* **Auditability & Traceability:** YAML matrices provide an unambiguous, version-controlled ledger of all supported query properties and their provenance.
 
 ### Negative / Trade-offs
-* Requires authoring and maintaining two formalized Markdown consensus matrices before implementation can begin.
+* Requires authoring and maintaining two formalized YAML consensus matrices before implementation can begin.
 * Callers needing niche or minor flags (e.g. night vision) must query the compound snapshot rather than using a dedicated facade predicate.
 
 ---
@@ -211,7 +213,7 @@ Under this decision, **no code implementation or dataclass generation may begin 
 
 1. Update the Master Risk Register (`architecture/risk/risk-list.md`) to capture potential predicate divergence risks.
 2. Update the Use-Case catalog (`architecture/use-cases/`) to reflect predicate queries.
-3. Author Phase 1 Consensus Matrices under `architecture/designs/`:
-   * `architecture/designs/facade_compound_snapshots_matrix_v1.0.0.md`
-   * `architecture/designs/facade_atomic_predicates_matrix_v1.0.0.md`
+3. Author Phase 1 Consensus Matrices under `architecture/designs/matrix/`:
+   * `architecture/designs/matrix/facade_compound_snapshots_v1.0.0.yaml`
+   * `architecture/designs/matrix/facade_atomic_predicates_v1.0.0.yaml`
 4. Implement `AmbientTelemetryFacade` and snapshot models in `src/ed_resolver/` once matrices are approved.

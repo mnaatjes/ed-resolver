@@ -192,8 +192,9 @@ Classification codification is structured into two explicit phases:
 ```
 +─────────────────────────────────────────────────────────────────────────────+
 | PHASE 1: ARCHITECTURAL CONSENSUS (Design Plane)                             |
-| - Author `architecture/designs/archetype_taxonomy_matrix_v<version>.md`     |
+| - Author `architecture/designs/matrix/archetype_taxonomy_v<version>.yaml`   |
 | - Exhaustively enumerates 100% of event models in `ed-models==vX.Y.Z`.      |
+| - Structured YAML schema validated via Pydantic / pre-commit check-yaml.    |
 | - Explicitly assigns models to one of 4 Archetypes or PASSIVE.              |
 +─────────────────────────────────────────────────────────────────────────────+
                                       │
@@ -201,19 +202,20 @@ Classification codification is structured into two explicit phases:
 +─────────────────────────────────────────────────────────────────────────────+
 | PHASE 2: OFFLINE CODE GENERATION & VALIDATION (Tooling Plane)               |
 | - Script: `scripts/generate_archetype_registry.py`                          |
-| - Error Gate: Aborts with exit code 1 if Markdown matrix drifts from AST.   |
+| - Error Gate: Aborts with exit code 1 if YAML matrix drifts from AST.       |
 | - Generates static, type-hinted `src/ed_resolver/.../registry.py`.          |
 | - Validated in CI via `tests/architecture/test_archetype_parity.py`.        |
 +─────────────────────────────────────────────────────────────────────────────+
 ```
 
-1. **Version-Pinned Master Architectural Registry (`architecture/designs/`):**
-   * Before generating code, an authoritative Markdown specification—pinned to a specific release version of `ed-models` (e.g. `architecture/designs/archetype_taxonomy_matrix_v0.2.1.md`)—must be authored and approved.
+1. **Version-Pinned Master Architectural YAML Registry (`architecture/designs/matrix/`):**
+   * Before generating code, an authoritative, structured YAML specification—pinned to a specific release version of `ed-models` (e.g. `architecture/designs/matrix/archetype_taxonomy_v0.2.1.yaml`)—must be authored and approved.
+   * YAML is chosen over Markdown tables to ensure native schema validation, robust nested metadata support, and deterministic machine parsing without brittle regex table scrapers.
    * Every event class across all 12 categories (`travel`, `station`, `trade`, `startup`, `odyssey`, `carrier`, `combat`, `exploration`, `powerplay`, `squadrons`, `other`, `status`) is explicitly assigned to one of the four archetypes or categorized as `PASSIVE`.
 
 2. **Offline Bespoke Generator Tool (`scripts/generate_archetype_registry.py`):**
    * Executed during development or dependency update workflows when upgrading `ed-models`.
-   * **Strict Discrepancy Error Gate:** The generator reads the approved Markdown matrix and cross-checks the abstract syntax tree (AST) of the pinned `ed-models` package. If any event in `ed-models` is missing from the Markdown specification, or if an event in the matrix no longer exists in `ed-models`, the generator **aborts immediately with exit code 1**, reporting the exact discrepancies.
+   * **Strict Discrepancy Error Gate:** The generator reads the approved YAML matrix (using `PyYAML` / Pydantic validation) and cross-checks the abstract syntax tree (AST) of the pinned `ed-models` package. If any event in `ed-models` is missing from the YAML specification, or if an event in the matrix no longer exists in `ed-models`, the generator **aborts immediately with exit code 1**, reporting the exact discrepancies.
    * On validation success, it outputs the formatted, type-safe `DEFAULT_ARCHETYPE_REGISTRY` mapping dictionary in `src/ed_resolver/core/domain/classification/registry.py`.
    * Eliminates runtime reflection overhead while maintaining deterministic, reviewable git diffs on all code updates.
 
@@ -225,21 +227,21 @@ Classification codification is structured into two explicit phases:
 * **Deterministic $O(1)$ Performance:** Type-based dictionary hashing eliminates repeated string parsing and regex matching on high-frequency streams.
 * **Exhaustive Parity Guarantees:** Inclusion of `TelemetryArchetype.PASSIVE` ensures that architectural parity tests verify 100% coverage across all 260+ models without conflating intentional non-mutators with forgotten events.
 * **Strict Drift Prevention:** The generator's discrepancy error gate prevents unreviewed upstream model additions from sneaking into production code.
-* **Human-Reviewed Taxonomy Governance:** Pinning the taxonomy matrix in `architecture/designs/` guarantees human architectural review for all ambiguous event classifications before code generation.
+* **Schema-Validated Taxonomy Governance:** Pinning the taxonomy matrix in structured YAML under `architecture/designs/matrix/` guarantees schema validation (`check-yaml`) and clean reviewable git diffs before code generation.
 * **Zero Runtime Overhead:** Code generation occurs offline in `scripts/`; process startup and tests require zero reflection or package crawling.
-* **Observable Git Diffs:** Upgrading `ed-models` versions produces transparent, reviewable diffs in both the Markdown matrix and the generated Python registry.
+* **Observable Git Diffs:** Upgrading `ed-models` versions produces transparent, reviewable diffs in both the YAML matrix and the generated Python registry.
 * **Zero Model Coupling:** `ed-models` remains pure, passive, and unopinionated; archetype semantics are managed entirely within `ed-resolver`.
 * **Isolated Extension Points:** Custom applications or integration test doubles can inject archetype overrides via `container.build_ingress_classifier(overrides=...)` without mutating global state.
 * **Hexagonal Compliance:** The classifier is a pure, zero-I/O domain service with zero third-party dependencies, adhering strictly to architectural boundaries.
 
 ### Negative / Trade-offs
-* Bumping `ed-models` versions requires authoring/updating the Markdown matrix before re-running `scripts/generate_archetype_registry.py`.
+* Bumping `ed-models` versions requires authoring/updating the YAML matrix before re-running `scripts/generate_archetype_registry.py`.
 * Unrecognized events not in the registry resolve to `None` and are ignored by state reducers (mitigated by automated parity tests in `tests/architecture/test_archetype_parity.py`).
 
 ---
 
 ## 6. Validation and Next Steps
 
-1. Author the initial version-pinned taxonomy matrix: `architecture/designs/archetype_taxonomy_matrix_v0.2.1.md`.
+1. Author the initial version-pinned taxonomy matrix: `architecture/designs/matrix/archetype_taxonomy_v0.2.1.yaml`.
 2. Implement the offline code generator: `scripts/generate_archetype_registry.py`.
 3. Generate `src/ed_resolver/core/domain/classification/registry.py` and verify parity via `tests/architecture/test_archetype_parity.py`.
