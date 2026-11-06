@@ -132,10 +132,16 @@ class AmbientTelemetryFacade:
         self._state_store = state_store
         self._ingress_worker = ingress_worker
 
-        # Domain Sub-Facades
-        self.location = LocationSubFacade(state_store)
-        self.vessel = VesselSubFacade(state_store)
-        self.flight = FlightModeSubFacade(state_store)
+        # 9 Cohesive Domain Sub-Facades Covering 100% of ed-models Taxonomy
+        self.location = LocationSubFacade(state_store)        # Spatial coordinates, bodies, jumps, docking
+        self.vessel = VesselSubFacade(state_store)            # Active ship, loadout, Odyssey suit, SRV
+        self.flight = FlightModeSubFacade(state_store)        # 1 Hz flags, gear, hardpoints, fuel gauges
+        self.cargo = CargoSubFacade(state_store)              # Commodities, inventory, materials, transfers
+        self.commander = CommanderSubFacade(state_store)      # Credits, ranks, reputations, bounties, crimes
+        self.station = StationSubFacade(state_store)          # Services, market, shipyard, repair, missions
+        self.carrier = CarrierSubFacade(state_store)          # Fleet carrier finances, jumps, crew, packs
+        self.exploration = ExplorationSubFacade(state_store)  # FSS scans, DSS maps, bio samples, codex
+        self.powerplay = PowerplaySubFacade(state_store)      # Pledges, merits, voting, power commodities
 
     # Lifecycle delegation
     async def start(self) -> None:
@@ -150,6 +156,12 @@ class AmbientTelemetryFacade:
 
     def is_docked(self) -> bool:
         return self.location.is_docked()
+
+    def in_supercruise(self) -> bool:
+        return self.location.in_supercruise()
+
+    def is_wanted(self) -> bool:
+        return self.commander.is_wanted()
 ```
 
 ### 4.3 Qualification Criteria for Atomic Predicates

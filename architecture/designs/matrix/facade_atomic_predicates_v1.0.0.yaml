@@ -14,7 +14,7 @@ predicates:
 
   in_supercruise:
     sub_facade: "location"
-    root_alias: false
+    root_alias: true
     projected_snapshot: "LocationSnapshot"
     projection_property: "in_supercruise"
     fallback_value: false
@@ -61,3 +61,41 @@ predicates:
     projection_property: "hardpoints_deployed"
     fallback_value: false
     description: "Evaluates whether ship weapon hardpoints are deployed."
+
+  # Sub-Facade: cargo
+  has_cargo:
+    sub_facade: "cargo"
+    root_alias: false
+    projected_snapshot: "CargoInventorySnapshot"
+    projection_property: "count"
+    predicate_eval: "count > 0"
+    fallback_value: false
+    description: "Evaluates whether the active vessel holds one or more commodity cargo items."
+
+  # Sub-Facade: commander
+  is_wanted:
+    sub_facade: "commander"
+    root_alias: true
+    projected_snapshot: "CommanderSnapshot"
+    projection_property: "is_wanted"
+    fallback_value: false
+    description: "Evaluates whether the commander currently carries an active local criminal bounty or fine."
+
+  # Sub-Facade: carrier
+  has_carrier:
+    sub_facade: "carrier"
+    root_alias: false
+    projected_snapshot: "CarrierSnapshot"
+    projection_property: "carrier_id"
+    predicate_eval: "carrier_id is not None"
+    fallback_value: false
+    description: "Evaluates whether the commander currently owns and operates a personal fleet carrier."
+
+  # Sub-Facade: powerplay
+  is_pledged:
+    sub_facade: "powerplay"
+    root_alias: false
+    projected_snapshot: "PowerplaySnapshot"
+    projection_property: "is_pledged"
+    fallback_value: false
+    description: "Evaluates whether the commander is currently pledged to a Powerplay galactic power."
