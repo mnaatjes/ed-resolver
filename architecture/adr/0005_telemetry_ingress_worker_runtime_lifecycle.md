@@ -203,13 +203,22 @@ Instead, `TelemetryIngressPort` is satisfied by three designated driven adapters
 
 1. **Primary Adapter (`EdTelemetryNetworkAdapter`):**
    * **Role:** Connects across the LAN or loopback to a running `ed-telemetry` streaming service via HTTP/SSE or WebSocket.
+   * **Target Endpoints (`ed-telemetry` API):**
+     * `GET /api/v1/stream`: Server-Sent Events (SSE) live push stream emitting JSON event payloads as they are journaled.
+     * `GET /api/v1/status/game`: Cockpit status tick snapshot (`Status.json`) for active operational flags, pips, and fuel levels.
+     * `GET /api/v1/events` & `/api/v1/events/buffer`: Event history and recent ring buffer for deterministic cold-start hydration and replay.
+     * `GET /api/v1/telemetry/head`: File offset, line number, and active journal filename tracking.
    * **Usage:** Default production deployment for multi-machine setups (e.g. gaming PC streaming to a Linux/Docker host) or standalone daemon operation.
    * **Mechanism:** Unpacks `ed-telemetry` wire DTOs and wraps their inner `payload_json` strings into clean `RawTelemetryEnvelope` instances.
 
 2. **Secondary Adapter (`EdTelemetryInProcessAdapter`):**
    * **Role:** For all-in-one desktop use without requiring a standalone daemon process.
+   * **Target Contracts (`ed-telemetry` Core):**
+     * **Port Contract:** `GetTelemetryStreamPort` (`ed_telemetry.core.ports.driving.telemetry_port`).
+     * **Use Case Implementation:** `GetTelemetryStreamUseCase.stream_events(timeout=...) -> Iterator[TelemetryPayloadDTO]` (`ed_telemetry.core.use_cases.get_telemetry_stream`).
+     * **DTO Payload Target:** `TelemetryPayloadDTO.payload_json` (raw JSON string) and `TelemetryPayloadDTO.timestamp`.
    * **Distribution:** Enabled via optional extra: `pip install ed-resolver[telemetry]`.
-   * **Mechanism:** Passive listener connecting directly to `ed-telemetry`'s in-memory stream buffer (`GetTelemetryStreamUseCase`). It does **not** manage or control `ed-telemetry`'s filesystem lifecycle; it simply consumes from the buffer inside the same memory space.
+   * **Mechanism:** Passive listener connecting directly to `ed-telemetry`'s in-memory stream buffer. It does **not** manage or control `ed-telemetry`'s filesystem lifecycle; it simply consumes from the buffer inside the same memory space.
 
 3. **Test Adapter (`MemoryQueueAdapter`):**
    * **Role:** Lightweight in-memory queue adapter for deterministic unit and architectural compliance tests.
