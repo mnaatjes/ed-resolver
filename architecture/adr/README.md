@@ -13,3 +13,4 @@ This directory contains the immutable Architectural Decision Records (ADRs) gove
 
 * [0001: Core Domain State Architecture and Unified Ingress Lifecycle](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0001_core_domain_state_architecture_and_unified_ingress_lifecycle.md)
 * [0002: Archetype Classification Subsystem and Registry](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0002_archetype_classification_subsystem_and_registry.md)
+* [0003: Ambient Telemetry Facade Query Contracts and Architectural Matrix Governance](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0003_ambient_telemetry_facade_query_contracts_and_governance.md)
