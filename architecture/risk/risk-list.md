@@ -33,6 +33,8 @@ $$RE = P \times I$$
 | **RISK-07** | Tight Ingress Transport Coupling to External Telemetry API | Arch | 4 | 3 | **12** | 🟡 Moderate | Active (ADR 0001) |
 | **RISK-08** | Archetype Taxonomy Drift on Upstream ed-models Upgrades | Schema | 4 | 3 | **12** | 🟡 Moderate | Active (ADR 0002) |
 | **RISK-09** | Ambiguous Multi-Archetype Event Overlap | Domain | 3 | 4 | **12** | 🟡 Moderate | Active (ADR 0002) |
+| **RISK-10** | Semantic State Divergence Between Facade Snapshots and Predicates | Domain | 3 | 4 | **12** | 🟡 Moderate | Active (ADR 0003) |
+| **RISK-11** | Unverified Scope Drift & Architectural Boundary Regression | Arch | 4 | 4 | **16** | 🔴 Critical | Active (ADR 0004) |
 
 ---
 
@@ -108,3 +110,19 @@ $$RE = P \times I$$
   1. Exhaustively document compound event handling in the version-pinned Markdown taxonomy matrix.
   2. Allow the `IngressClassifier` or dispatch pipeline to register secondary handler hooks or route composite events across multiple reducer stages where necessary.
   3. Validate compound state transitions in integration scenario tests.
+
+### RISK-10: Semantic State Divergence Between Facade Snapshots and Predicates
+* **Description:** If atomic predicate helpers on `AmbientTelemetryFacade` (e.g., `is_on_foot()`, `is_docked()`) evaluate independent state or inspect raw journal lines separately from compound snapshots (`get_vessel()`, `get_location()`), race conditions or divergent answers could occur across concurrent readers.
+* **Scoring:** $P=3, I=4 \rightarrow RE=12$ (Moderate).
+* **Mitigation Plan:**
+  1. Enforce ADR 0003 Non-Divergent Projection Guarantee: every atomic predicate method must strictly read from the underlying frozen snapshot instance.
+  2. Verify non-divergence via automated parameter-sweep property tests in `tests/unit/test_facade_projections.py`.
+  3. Maintain consensus matrices under `architecture/designs/matrix/` governing predicate qualification.
+
+### RISK-11: Unverified Scope Drift & Architectural Boundary Regression
+* **Description:** In complex multi-adapter state synthesis libraries, ongoing feature additions risk breaking layer isolation (e.g., adapters leaking into domain core, async contagion in synchronous facades, or unchecked event omissions). Without strict automated enforcement gates across CI and pre-commit, architectural regressions accumulate silently.
+* **Scoring:** $P=4, I=4 \rightarrow RE=16$ (Critical).
+* **Mitigation Plan:**
+  1. Codify complete layer boundaries and verification tooling into ADR 0004.
+  2. Multi-tier automated enforcement: `import-linter` boundary contracts, `pytest-archon` AST rules, `mypy` strict static typing, and pre-commit hooks (`check-yaml`, `ruff`).
+  3. Wire all enforcement gates into `scripts/verify.py` and GitHub Actions CI workflow (`.github/workflows/ci.yml`), blocking any PR that introduces layer leaks or unverified scope drift.
