@@ -213,6 +213,40 @@ Inside `_run_loop()`, each incoming event traverses four sequential phases:
    * Updates frozen domain snapshots atomically in the `DomainStateStore`.
    * Dispatches change notifications to registered subscribers via `TelemetryNotificationPort`.
 
+### 4.5 Operational Exception Model vs. Query Null-Return Strategy
+
+`ed-resolver` strictly decouples **state query responses** from **runtime operational failures**:
+
+* **Downstream Query Return Strategy (ADR 0001 & ADR 0003):**
+  When consumer facades query domain state (e.g., `get_location()`), unseeded or mid-flight edge cases return explicit nullable types (`LocationSnapshot | None`) or pre-populated safe defaults rather than raising exceptions.
+
+* **Worker Operational Exceptions:**
+  Unlike passive domain queries, the `TelemetryIngressWorker` controls active system plumbing and background task lifecycles. Operational mistakes (e.g. attempting to double-start a running worker) or infrastructure failures (e.g. port connection drops, shutdown timeouts) must raise explicit, structured exceptions (`core/errors.py`):
+
+```python
+class TelemetryWorkerError(Exception):
+    """Base exception for all worker lifecycle and operational failures."""
+
+
+class WorkerAlreadyRunningError(TelemetryWorkerError):
+    """Raised when start() is invoked on an already running worker."""
+
+
+class WorkerNotRunningError(TelemetryWorkerError):
+    """Raised when an operation requires an active worker, but it is stopped."""
+
+
+class WorkerLifecycleTimeoutError(TelemetryWorkerError):
+    """Raised when stop() times out waiting for the worker loop task to conclude."""
+
+
+class IngressPortConnectionError(TelemetryWorkerError):
+    """Raised when the worker cannot connect to or initialize the IngressPort stream."""
+```
+
+**What Does NOT Raise an Exception:**
+Payload deserialization errors, malformed JSON, and unexpected game events are strictly non-fatal. They do **not** raise `TelemetryWorkerError`; instead, they route immediately to `QuarantineDeadLetterQueue` to maintain continuous runtime availability.
+
 ---
 
 ## 5. Consequences
