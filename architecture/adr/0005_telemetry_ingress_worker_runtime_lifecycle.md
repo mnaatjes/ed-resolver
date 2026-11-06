@@ -1,0 +1,165 @@
+---
+title: "ADR 0005: TelemetryIngressWorker Runtime and Ingress Lifecycle"
+tags: ["adr", "ed-resolver", "architecture", "worker", "runtime", "ingress", "hexagonal", "ports-and-adapters", "asyncio"]
+created_at: "2026-11-06"
+last_updated_at: "2026-11-06"
+---
+
+# ADR 0005: TelemetryIngressWorker Runtime and Ingress Lifecycle
+
+* **Status:** Accepted
+* **Date:** 2026-11-06
+* **Deciders:** Michael Naatjes, Antigravity Agent
+* **Consulted:** [ADR 0001](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0001_core_domain_state_architecture_and_unified_ingress_lifecycle.md), [ADR 0002](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0002_archetype_classification_subsystem_and_registry.md), [ADR 0003](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0003_ambient_telemetry_facade_query_contracts_and_governance.md), [ADR 0004](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0004_hexagonal_scope_boundary_contracts_and_quality_gates.md)
+
+---
+
+## 1. Context and Problem Statement
+
+Frontier Developments' *Elite Dangerous* telemetry streams arrive as asynchronous, continuous event sequences across journal files, status bitfield snapshots, and network streams. In the hexagonal architecture of `ed-resolver`:
+
+1. The **Domain Core** (`core/domain/`) is strictly passive, synchronous, and pure. It contains domain entities, state snapshots, archetypes, and state reducers that mutate internal snapshots when given structured domain events.
+2. The **Ports** (`core/ports/`) define clean boundary interfaces for telemetry ingress (`TelemetryIngressPort`), state queries, and notification emissions.
+3. The **Driving Adapters** (`adapters/driving/`) provide client-facing entrypoints, such as `AmbientTelemetryFacade` (for in-process programmatic consumers like `ed-connector`) and REST/WebSocket API controllers (for external clients).
+
+However, a fundamental runtime problem exists: **What executes the continuous asynchronous consumption loop that bridges the driven telemetry stream port to the domain core reducers?**
+
+If `ed-resolver` provides only a passive facade with synchronous methods like `feed(event)`, every downstream consumer (e.g., `ed-connector`, TUI dashboards, copilot tools, and standalone services) must write its own `asyncio` task, implement exponential-backoff stream reconnects, handle raw JSON parsing, deserialize payloads with `ed-models`, catch validation errors, and dispatch events. This replicates fragile loop infrastructure across every client application in the fleet.
+
+Conversely, if that background execution loop is implemented only inside a standalone OS daemon process (`ed-resolver-daemon`), in-process Python tools, copilot scripts, and smoke test suites would be forced to deploy and manage a standalone operating system daemon just to observe resolved game state.
+
+Furthermore, confusion often arises regarding the architectural identity of this loop:
+* Is it a "daemon"?
+* Is it a "driving adapter"?
+* Or is it an internal driven runtime worker?
+
+A definitive architectural decision is required to formalize the role, taxonomy, lifecycle, and failure-containment boundaries of `TelemetryIngressWorker`.
+
+---
+
+## 2. Decision Drivers
+
+* **Zero Duplication across Consumers:** The asynchronous event-reading loop, reconnection heuristics, raw envelope validation, and reducer dispatch must be written once and reusable anywhere in the fleet.
+* **Architectural Role Clarity:** Strictly demarcate `TelemetryIngressWorker` within the Ports & Adapters hierarchy. Clarify why it is an internal driven runtime component rather than a driving adapter or a standalone daemon.
+* **Passive Domain Purity:** The domain core must never instantiate event loops, background threads, or network sockets. The worker mediates between asynchronous external streams and synchronous core reducers.
+* **Dual Ingress Lifecycles (Embedded vs. Standalone):** Both the embedded `AmbientTelemetryFacade(auto_connect=True)` and the CLI executable `ed-resolver-daemon` must utilize the exact same `TelemetryIngressWorker` engine.
+* **Permissive Deserialization & Quarantine DLQ (Fault Isolation):** Malformed payloads, unknown Frontier events, or schema drift (Frontier game updates) must be quarantined to a Dead Letter Queue without crashing the worker task or halting state tracking.
+* **Controlled Task Lifecycle:** The worker must support deterministic startup (`start()`), graceful cancellation (`stop()`), and backpressure control without orphaned coroutines or memory leaks.
+
+---
+
+## 3. Considered Options
+
+* **Option 1: Consumer-Managed Loops (Passive Core Only).** `ed-resolver` exports only reducers and `AmbientTelemetryFacade.feed(event)`. Consumers are responsible for managing their own async streaming tasks and reconnection logic.
+  * *Disadvantage:* High code duplication across fleet tools; divergent error handling; difficult fleet-wide updates.
+* **Option 2: Standalone Daemon Only.** `TelemetryIngressWorker` exists only as part of an external CLI daemon (`ed-resolver-daemon`). All consumers must talk to the daemon over HTTP/WebSocket IPC.
+  * *Disadvantage:* Heavy operational overhead for in-process libraries, CLI tools, and automated smoke tests; prevents zero-latency in-memory query facades.
+* **Option 3: Reusable Driven Runtime Worker (Selected).** Implement `TelemetryIngressWorker` inside `src/ed_resolver/adapters/driven/runtime/` as an asynchronous worker class that consumes from `TelemetryIngressPort`, deserializes and classifies payloads, routes to core reducers, and handles quarantine. Both `AmbientTelemetryFacade` and `ed-resolver-daemon` instantiate and manage this worker.
+
+---
+
+## 4. Decision Outcome
+
+**Chosen Option:** **Option 3: Reusable Driven Runtime Worker**.
+
+### 4.1 Taxonomic Classification in Hexagonal Architecture
+
+`TelemetryIngressWorker` is categorized as an **Internal Driven Runtime Worker** located under `src/ed_resolver/adapters/driven/runtime/worker.py`:
+
+```
+                       +---------------------------------------+
+                       |           DRIVING BOUNDARY            |
+                       |  AmbientTelemetryFacade / Daemon CLI  |
+                       +-------------------+-------------------+
+                                           |
+                    controls lifecycle     |  queries state
+                      (start / stop)       |  (get_snapshot)
+                                           v
++------------------------------------------+------------------------------------------+
+|                                      APPLICATION                                    |
+|                                                                                     |
+|   +-----------------------------------------------------------------------------+   |
+|   |                  TelemetryIngressWorker (Driven Runtime)                    |   |
+|   |                                                                             |   |
+|   |   1. Stream Ingestion: Pulls RawTelemetryEnvelope from TelemetryIngressPort   |   |
+|   |   2. Deserialization: Maps JSON to ed-models DTO with quarantine DLQ         |   |
+|   |   3. Classification: Resolves TelemetryArchetype via IngressClassifier      |   |
+|   |   4. State Reduction: Calls pure synchronous reducers in Domain Core        |   |
+|   +-------------------+-------------------------------------+-------------------+   |
+|                       |                                     |                       |
++-----------------------|-------------------------------------|-----------------------+
+                        | consumes stream                     | mutates state
+                        v                                     v
+         +-----------------------------+       +-----------------------------+
+         |     TelemetryIngressPort    |       |      Domain State Store     |
+         |    (Driven Adapter Port)    |       |        (Domain Core)        |
+         +-----------------------------+       +-----------------------------+
+```
+
+1. **Why it is NOT the Daemon:**
+   The daemon (`ed-resolver-daemon`) is an operational OS-level process boundary—a CLI executable script that initializes logging, loads environment configuration, boots an HTTP/WebSocket server, and hosts the worker. The worker itself is pure Python code with no network listener, daemonization, or signal-handling lock-in.
+
+2. **Why it is NOT a Driving Adapter:**
+   A driving adapter initiates commands or queries against the application boundary in response to human or external client requests (e.g., `AmbientTelemetryFacade.get_location()`, HTTP `GET /api/v1/state/location`). The worker does not accept user queries; it runs in the background, consuming from driven ingress ports and pumping data downward into the domain state store.
+
+3. **Why it IS a Driven Runtime Worker:**
+   It is driven by the application runtime lifecycle (started and stopped by the facade or daemon host) and drives events into core reducers by consuming from external stream adapters satisfying `TelemetryIngressPort`.
+
+---
+
+### 4.2 Worker Lifecycle & Execution Model
+
+The worker manages a single supervised `asyncio.Task`:
+
+* **`start() -> None`:**
+  1. Validates that the worker is not already running.
+  2. Spawns an internal `asyncio.Task` executing the continuous ingress loop `_run_loop()`.
+  3. Emits a lifecycle notification indicating the worker has started.
+* **`stop(timeout: float = 5.0) -> None`:**
+  1. Signals cancellation to the loop task.
+  2. Awaits task termination within the specified timeout.
+  3. Closes any open ingress stream resources cleanly.
+* **`is_running -> bool`:**
+  Returns whether the background task is currently active.
+
+---
+
+### 4.3 Ingress Pipeline Operations
+
+Inside `_run_loop()`, each incoming event traverses four sequential phases:
+
+1. **Stream Ingestion:**
+   Consumes `RawTelemetryEnvelope` items asynchronously from the injected `TelemetryIngressPort` implementation (e.g., `DiskJournalStreamAdapter`, `WebSocketStreamAdapter`, or `MemoryQueueStreamAdapter`).
+2. **Permissive Deserialization & Quarantine (DLQ):**
+   * Uses `ed-models` to deserialize payload JSON into typed event DTOs.
+   * If parsing fails (unknown event structure, corrupted JSON, or schema validation error), the raw envelope is not dropped silently; it is routed directly to the `QuarantineDeadLetterQueue` with error diagnostics. The worker continues executing without crashing.
+3. **Archetype Classification:**
+   * Invokes `IngressClassifier.classify(event)` to map the event to its primary `TelemetryArchetype` using the generated classification registry.
+4. **Domain State Reduction:**
+   * Passes the classified event and archetype to the synchronous `StateReducerPipeline`.
+   * Updates frozen domain snapshots atomically in the `DomainStateStore`.
+   * Dispatches change notifications to registered subscribers via `TelemetryNotificationPort`.
+
+---
+
+## 5. Consequences
+
+### Positive
+
+* **Uniform Behavior Across Runtimes:** Whether embedded in a copilot or running in a 24/7 background daemon, event reduction, deserialization, and quarantine rules are identical.
+* **Resilience against Game Updates:** Schema changes or unrecognized journal events never crash the consumer application or loop task; unparsed events are cleanly sequestered in quarantine.
+* **Clean Hexagonal Isolation:** The domain core remains completely synchronous and decoupled from `asyncio`, network sockets, or OS process lifecycles.
+* **Testability:** In unit and integration smoke tests, the worker can be wired to a `MemoryQueueStreamAdapter` and stepped deterministically without spawning OS daemon processes.
+
+### Negative
+
+* **Asyncio Concurrency Requirement:** In-process embedded consumers must either run within an `asyncio` event loop or let the facade manage an isolated worker background thread with its own loop.
+* **Quarantine Memory Management:** The in-memory dead-letter queue must enforce a bounded capacity (ring buffer or eviction policy) to prevent memory growth during prolonged periods of invalid data.
+
+---
+
+## 6. References
+
+* [ADR 0001: Core Domain State Architecture and Unified Ingress Lifecycle](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0001_core_domain_state_architecture_and_unified_ingress_lifecycle.md)
+* [ADR 0002: Archetype Classification Subsystem and Registry](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0002_archetype_classification_subsystem_and_registry.md)
+* [ADR 0004: Hexagonal Scope Boundary Contracts and Automated Quality Gate Enforcement](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0004_hexagonal_scope_boundary_contracts_and_quality_gates.md)
