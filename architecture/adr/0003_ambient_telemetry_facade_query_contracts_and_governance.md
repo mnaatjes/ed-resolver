@@ -41,77 +41,115 @@ How should `ed-resolver` structure the `AmbientTelemetryFacade` query API to sup
 
 ---
 
-## 3. Considered Options
-
-* **Option 1: Compound Snapshots Only.** Provide only compound dataclass getters (`get_location()`, `get_vessel()`). All boolean checks must be performed by callers (e.g. `facade.get_vessel().is_on_foot if facade.get_vessel() else False`). Rejected due to excessive boilerplate and null-checking repetition across downstream callers.
-* **Option 2: Flat Atomic Predicates and Getters Only.** Provide individual methods for every scalar property and flag (`get_system_name()`, `is_docked()`, `is_on_foot()`, `get_hull_health()`). Rejected due to massive facade method bloat (50+ methods) and severe risk of torn reads across rapid successive calls.
-* **Option 3: Hybrid Dual-Pattern Facade Governed by Architectural Consensus Matrices (Selected).** Implement both patterns in `AmbientTelemetryFacade`, enforcing that all atomic predicates are non-divergent 1-line projections over canonical frozen snapshots. Require all compound DTO schemas and approved predicates to be cataloged in versioned Markdown consensus matrices under `architecture/designs/` prior to implementation.
+* **Option 1: Monolithic Flat Facade.** Provide all snapshot getters and predicate methods directly on a single `AmbientTelemetryFacade` class (`facade.get_location()`, `facade.is_docked()`, `facade.get_vessel()`, `facade.is_on_foot()`). Rejected due to namespace pollution and method bloat as the game domain expands.
+* **Option 2: Segregation by Query Pattern.** Separate namespaces based strictly on return type (`facade.snapshots.*` vs. `facade.predicates.*`). Rejected as an anti-pattern: callers think domain-first (spatial location, vessel, combat), not syntax-first.
+* **Option 3: External Dependency Injection Container / Service Locator.** Expose state queries via a DI container (`container.resolve(ILocationService)`). Rejected because it leaks container mechanics into consumer code (`ed-connector`, scripts, copilots) where zero-overhead Python ergonomics are required.
+* **Option 4: Domain-Grouped Sub-Facades with Root Convenience Aliasing (Selected).** Structure `AmbientTelemetryFacade` into cohesive domain sub-facades (`facade.location`, `facade.vessel`, `facade.flight`, `facade.status`), where each sub-facade co-locates its compound snapshot getter alongside its related atomic predicates. Surface the most ubiquitous macro-state helpers (`facade.is_on_foot()`, `facade.is_docked()`) as root-level convenience aliases.
 
 ---
 
 ## 4. Decision Outcome
 
-**Chosen Option:** **Option 3: Hybrid Dual-Pattern Facade Governed by Architectural Consensus Matrices**.
+**Chosen Option:** **Option 4: Domain-Grouped Sub-Facades with Root Convenience Aliasing**.
 
 ### 4.1 Facade Structural Architecture
 
-The facade acts as a synchronous, ergonomics-first projection layer over the internal `StateStore`:
+The facade acts as a root coordinator delegating to cohesive, domain-bounded sub-facades while surfacing high-frequency convenience aliases:
 
 ```
                              CALLER QUERY
                                   │
-         ┌────────────────────────┴────────────────────────┐
-         │ (Compound Snapshot)                             │ (Atomic Predicate)
-         ▼                                                 ▼
-   facade.get_location()                            facade.is_docked()
-         │                                                 │
-         │ (atomic read)                                   │ (reads underlying snapshot)
-         ▼                                                 ▼
+         ┌────────────────────────┼────────────────────────┐
+         │ (Domain Sub-Facade)    │ (Domain Sub-Facade)    │ (Root Convenience Alias)
+         ▼                        ▼                        ▼
+   facade.location          facade.vessel            facade.is_on_foot()
+         │                        │                        │
+   ┌─────┴───────────────┐  ┌─────┴───────────────┐        │ (direct alias)
+   ▼                     ▼  ▼                     ▼        ▼
+.snapshot()  .is_docked()  .snapshot()  .is_on_foot() ────►┘
+   │                     │  │                     │
+   └──────────┬──────────┘  └──────────┬──────────┘
+              ▼                        ▼
    +─────────────────────────────────────────────────────────────+
    |                  INTERNAL STATE STORE                       |
    |  - _location: LocationSnapshot (frozen, immutable)          |
    |  - _vessel: VesselSnapshot (frozen, immutable)              |
    |  - _flight: FlightModeSnapshot (frozen, immutable)          |
    +─────────────────────────────────────────────────────────────+
-         │                                                 │
-         ▼                                                 ▼
-   returns LocationSnapshot | None                   returns bool (snapshot.docked)
 ```
 
-### 4.2 Non-Divergent Projection Guarantee
+### 4.2 Non-Divergent Domain Sub-Facades
 
-To ensure state consistency, atomic predicates are strictly forbidden from maintaining independent state or consulting raw bitmasks directly. They must project directly from the primary snapshot:
+To guarantee state consistency, each domain sub-facade holds a reference to the atomic `StateStore` and evaluates its predicates strictly as 1-line projections over the active frozen snapshot:
 
 ```python
+class LocationSubFacade:
+    """Domain sub-facade for spatial coordinates, docking, and celestial context."""
+
+    def __init__(self, state_store: StateStore) -> None:
+        self._state_store = state_store
+
+    def snapshot(self) -> LocationSnapshot | None:
+        """Return the current atomic location snapshot."""
+        return self._state_store.get_location()
+
+    def is_docked(self) -> bool:
+        """Predicate: Is commander docked at a station, outpost, or carrier."""
+        loc = self.snapshot()
+        return loc.docked if loc is not None else False
+
+    def in_supercruise(self) -> bool:
+        """Predicate: Is commander in supercruise flight."""
+        loc = self.snapshot()
+        return loc.in_supercruise if loc is not None else False
+
+
+class VesselSubFacade:
+    """Domain sub-facade for commander vessel, loadout, suit, and SRV state."""
+
+    def __init__(self, state_store: StateStore) -> None:
+        self._state_store = state_store
+
+    def snapshot(self) -> VesselSnapshot | None:
+        """Return the current atomic vessel snapshot."""
+        return self._state_store.get_vessel()
+
+    def is_on_foot(self) -> bool:
+        """Predicate: Is commander disembarked on foot (Odyssey suit)."""
+        vessel = self.snapshot()
+        return vessel.is_on_foot if vessel is not None else False
+
+    def is_in_srv(self) -> bool:
+        """Predicate: Is commander operating a surface reconnaissance vehicle."""
+        vessel = self.snapshot()
+        return vessel.is_in_srv if vessel is not None else False
+
+
 class AmbientTelemetryFacade:
-    """Synchronous driving facade exposing compound snapshots and projected predicates."""
+    """Root driving facade exposing domain sub-facades and root convenience aliases."""
 
     def __init__(self, state_store: StateStore, ingress_worker: TelemetryIngressWorker) -> None:
         self._state_store = state_store
         self._ingress_worker = ingress_worker
 
-    # 1. Compound Snapshot Queries (Canonical Truth)
-    def get_location(self) -> LocationSnapshot | None:
-        return self._state_store.get_location()
+        # Domain Sub-Facades
+        self.location = LocationSubFacade(state_store)
+        self.vessel = VesselSubFacade(state_store)
+        self.flight = FlightModeSubFacade(state_store)
 
-    def get_vessel(self) -> VesselSnapshot | None:
-        return self._state_store.get_vessel()
+    # Lifecycle delegation
+    async def start(self) -> None:
+        await self._ingress_worker.start()
 
-    def get_flight_mode(self) -> FlightModeSnapshot | None:
-        return self._state_store.get_flight_mode()
+    async def stop(self) -> None:
+        await self._ingress_worker.stop()
 
-    # 2. Atomic Predicates (Projected Convenience Helpers)
-    def is_docked(self) -> bool:
-        loc = self.get_location()
-        return loc.docked if loc is not None else False
-
+    # Root Convenience Aliases (Ubiquitous Macro-Context Predicates)
     def is_on_foot(self) -> bool:
-        vessel = self.get_vessel()
-        return vessel.is_on_foot if vessel is not None else False
+        return self.vessel.is_on_foot()
 
-    def in_supercruise(self) -> bool:
-        flight = self.get_flight_mode()
-        return flight.in_supercruise if flight is not None else False
+    def is_docked(self) -> bool:
+        return self.location.is_docked()
 ```
 
 ### 4.3 Qualification Criteria for Atomic Predicates
