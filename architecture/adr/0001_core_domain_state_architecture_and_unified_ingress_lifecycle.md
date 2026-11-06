@@ -1,6 +1,6 @@
 ---
 title: "ADR 0001: Core Domain State Architecture and Unified Ingress Lifecycle"
-tags: ["adr", "ed-resolver", "architecture", "facade", "daemon", "cli", "hexagonal", "archetypes"]
+tags: ["adr", "ed-resolver", "architecture", "facade", "daemon", "cli-daemon", "hexagonal", "archetypes"]
 created_at: "2026-11-06"
 last_updated_at: "2026-11-06"
 ---
@@ -43,10 +43,13 @@ How should `ed-resolver` encapsulate the background runner logic to guarantee ze
 
 ## 2. Decision Drivers
 
-* **Encapsulated Ingress Worker (Zero Logic Duplication):** The asynchronous worker logic that connects to `ed-telemetry`, handles reconnection, deserializes raw JSON, and feeds reducers must reside 100% inside `ed-resolver` as a reusable component.
+* **Encapsulated Ingress Worker (Zero Logic Duplication):** The asynchronous worker logic that connects to telemetry feeds, handles reconnection, deserializes raw JSON, and feeds reducers must reside 100% inside `ed-resolver` as a reusable runtime component.
 * **Passive Domain Core vs. Active Lifecycle Runner:** The hexagonal core (archetypes, classifier, state store) must remain pure and synchronous, while the async listener loop is cleanly encapsulated in an operational worker runtime (`TelemetryIngressWorker`).
 * **Thin Daemon Executable:** The standalone daemon (`ed-resolver-daemon`) must be a thin CLI entrypoint that merely hosts the reusable worker and exposes an HTTP/WebSocket server.
 * **Pluggable Ingress Decoupling:** The ingress pipeline must support interchangeable sources: in-memory queues (testing), local journal disk tailing (embedded), or remote WebSocket/SSE streams (`ed-telemetry` API).
+* **Pure Boundary Isolation (No Foreign DTOs in Core):** The domain core must define its own internal envelope contracts (`RawTelemetryEnvelope`) without importing concrete transport DTOs from external packages.
+* **Resilient Deserialization & Quarantine:** Ingress parsing must handle malformed JSON and schema drift gracefully (per `RISK-06`) via dead-letter quarantine without halting the state reducer.
+* **Thread-Safe Atomic State Synchronization:** Concurrent reads and async writes must guarantee atomic snapshot replacements (`@dataclass(frozen=True)`) without torn reads or thread lock contention.
 * **Deterministic Cold-Start Resilience:** Startup back-replay hydration must guarantee immediate, valid state recovery across mid-session launches, with explicit null-safe contracts for unseeded edge cases.
 * **Passive Decoupling from `ed-models`:** `ed-models` dataclasses must remain pure, passive schema contracts; no behavioral archetype metadata or reduction logic may leak into `ed-models`.
 
@@ -67,74 +70,95 @@ How should `ed-resolver` encapsulate the background runner logic to guarantee ze
 ### 4.1 Architectural Hierarchy
 
 ```
-+--------------------------------------------------------------------------+
-|                          PACKAGE: ed-resolver                            |
-|                                                                          |
-|   +──────────────────────────────────────────────────────────────────+   |
-|   | THIN CLI EXECUTABLE ENTRYPOINT:                                  |   |
-|   | `ed-resolver-daemon` ([project.scripts] console script)          |   |
-|   |  - Parses CLI flags (--port 8989, --telemetry-url)               |   |
-|   |  - Starts TelemetryIngressWorker + REST / WebSocket API Server   |   |
-|   +───────────────────────────────┬──────────────────────────────────+   |
-|                                   │ boots worker & serves HTTP/WS        |
-|                                   ▼                                      |
-|   +──────────────────────────────────────────────────────────────────+   |
-|   | DRIVING ADAPTER: In-Process Ambient Facade (`AmbientFacade`)     |   |
-|   |  - Exposes get_location(), get_vessel(), is_on_foot()            |   |
-|   |  - Contains reusable `TelemetryIngressWorker` (async task)       |   |
-|   +───────────────────────────────┬──────────────────────────────────+   |
-|                                   │ drives via method invocations        |
-|                                   ▼                                      |
-|   +──────────────────────────────────────────────────────────────────+   |
-|   |                     HEXAGONAL DOMAIN CORE                        |   |
-|   |                                                                  |   |
-|   |   1. IngressClassifier (Stateless Event -> Archetype Router)     |   |
-|   |   2. Behavioral Archetype Reducers (ADR 0003 Mechanics):        |   |
-|   |      - EpochMilestoneAggregator                                  |   |
-|   |      - ContextMutator                                            |   |
-|   |      - EdgeTransitionDetector                                    |   |
-|   |      - MetricQuantizer                                           |   |
-|   |   3. Ambient State Cache (Frozen Dataclass Snapshots)            |   |
-|   +──────────────────────────────────────────────────────────────────+   |
-|                                   ▲                                      |
-|                                   │ (Driven Port: Telemetry Ingress)     |
-|   +───────────────────────────────┴──────────────────────────────────+   |
-|   | PLUGGABLE DRIVEN INGRESS ADAPTERS:                               |   |
-|   |  - DirectQueueIngressAdapter (Mock queues / deterministic test)  |   |
-|   |  - LocalJournalFileIngressAdapter (Direct disk tailing via lib)  |   |
-|   |  - RemoteTelemetryApiIngressAdapter (ed-telemetry WebSocket/SSE)|   |
-|   +------------------------------------------------------------------+   |
-+--------------------------------------------------------------------------+
++------------------------------------------------------------------------------------+
+|                                PACKAGE: ed-resolver                                |
+|                                                                                    |
+|   +────────────────────────────────────────────────────────────────────────────+   |
+|   | THIN CLI EXECUTABLE ENTRYPOINT:                                            |   |
+|   | `ed-resolver-daemon` ([project.scripts] console script in cli.py)          |   |
+|   |  - Parses CLI flags (--port 8989, --telemetry-url, --journal-dir)          |   |
+|   |  - Starts TelemetryIngressWorker + REST / WebSocket API Server             |   |
+|   +─────────────────────────────────────┬──────────────────────────────────────+   |
+|                                         │ boots worker & serves HTTP/WS            |
+|                                         ▼                                          |
+|   +────────────────────────────────────────────────────────────────────────────+   |
+|   | DRIVING ADAPTER: In-Process Ambient Facade (`AmbientTelemetryFacade`)      |   |
+|   |  - Exposes get_location(), get_vessel(), is_on_foot(), get_flight_mode()   |   |
+|   |  - Delegated lifecycle controls: start() / stop() via IngressWorker        |   |
+|   +─────────────────────────────────────┬──────────────────────────────────────+   |
+|                                         │ reads atomic state snapshots             |
+|                                         ▼                                          |
+|   +────────────────────────────────────────────────────────────────────────────+   |
+|   |                           HEXAGONAL DOMAIN CORE                            |   |
+|   |                                                                            |   |
+|   |   1. IngressClassifier (Stateless Event -> Archetype Router)               |   |
+|   |   2. Behavioral Archetype Reducers (ADR 0003 Mechanics):                  |   |
+|   |      - EpochMilestoneAggregator                                            |   |
+|   |      - ContextMutator                                                      |   |
+|   |      - EdgeTransitionDetector                                              |   |
+|   |      - MetricQuantizer                                                     |   |
+|   |   3. StateStore (Atomic Reference Swap of Frozen Dataclass Snapshots)      |   |
+|   +─────────────────────────────────────▲──────────────────────────────────────+   |
+|                                         │ (Driven Port: TelemetryIngressPort)      |
+|   +─────────────────────────────────────┴──────────────────────────────────────+   |
+|   | DRIVEN INGRESS RUNTIME (`TelemetryIngressWorker`):                         |   |
+|   |  - Permissive Deserializer (ed_models.parse_journal_event + Quarantine)    |   |
+|   |  - Manages stream connection, auto-reconnect, and line dispatch            |   |
+|   +─────────────────────────────────────▲──────────────────────────────────────+   |
+|                                         │ consumes raw byte/JSON envelopes         |
+|   +─────────────────────────────────────┴──────────────────────────────────────+   |
+|   | PLUGGABLE INGRESS ADAPTERS:                                                |   |
+|   |  - DirectQueueIngressAdapter (In-memory asyncio.Queue for tests/copilots)  |   |
+|   |  - LocalJournalFileIngressAdapter (Direct disk tailing via ed-telemetry)   |   |
+|   |  - RemoteTelemetryApiIngressAdapter (WebSocket/SSE client to ed-telemetry)|   |
+|   +----------------------------------------------------------------------------+   |
++------------------------------------------------------------------------------------+
 ```
 
 ### 4.2 Reusable Worker Runtime vs. Thin Daemon Entrypoint
 
-1. **`TelemetryIngressWorker` (Inside `ed-resolver`):**
+1. **`TelemetryIngressWorker` (Infrastructure Runtime Worker):**
    * Encapsulates the complete background listening, stream reconnection, raw JSON deserialization (via `ed_models.parse_journal_event`), and archetype dispatch loop.
+   * **Quarantine / DLQ Policy (RISK-06):** Inbound lines that fail JSON decoding or model hydration are caught, routed to an optional quarantine logging callback, and bypassed without raising uncaught exceptions or terminating the worker loop.
    * Exposes clean lifecycle controls: `await worker.start()` and `await worker.stop()`.
-   * **For Embedded Consumers (`ed-connector`, Copilot):** Consumers instantiate the facade with `auto_connect=True` (or call `await facade.start()`). `ed-resolver` spins up the worker as a background `asyncio.Task` inside the caller's event loop. Zero code duplication.
+   * **For Embedded Consumers (`ed-connector`, Copilot):** Consumers instantiate `AmbientTelemetryFacade(auto_connect=True)` or call `await facade.start()`. The facade delegates to an internal `TelemetryIngressWorker` running as a background `asyncio.Task` inside the caller's event loop. Zero code duplication.
 
 2. **`ed-resolver-daemon` (Thin CLI Entrypoint):**
    * Defined as a console script in `pyproject.toml` pointing to `src/ed_resolver/daemon/cli.py`.
-   * Accepts command-line parameters (e.g. `--port`, `--telemetry-host`, `--log-dir`).
-   * Instantiates the core `AmbientTelemetryFacade`, starts the `TelemetryIngressWorker`, and exposes a lightweight Starlette/FastAPI HTTP/WebSocket server.
+   * Accepts command-line parameters (e.g. `--port`, `--telemetry-host`, `--journal-dir`).
+   * Instantiates `AmbientTelemetryFacade`, starts `TelemetryIngressWorker`, and exposes a lightweight Starlette/FastAPI HTTP/WebSocket server.
    * Contains zero business logic; acts strictly as an operating system process harness.
 
-### 4.3 Pluggable Ingress Ports
+### 4.3 Pluggable Ingress Ports & Pure Domain Isolation
 
-The domain core defines a pure driven interface:
+To preserve Hexagonal Boundary Isolation, the domain core defines its own pure driven port and envelope protocol without importing foreign transport DTOs:
+
 ```python
+@dataclass(frozen=True, slots=True)
+class RawTelemetryEnvelope:
+    """Pure domain boundary envelope for inbound telemetry payloads."""
+    topic: str
+    timestamp: datetime
+    payload_bytes: bytes
+
+
 class TelemetryIngressPort(Protocol):
-    """Driven port through which raw telemetry envelopes enter the state core."""
-    def feed(self, envelope: TelemetryPayloadDTO) -> None: ...
+    """Driven port through which normalized telemetry envelopes enter the state core."""
+    def feed(self, envelope: RawTelemetryEnvelope) -> None: ...
 ```
 
-The concrete ingress source is completely decoupled from state reduction and supplied via interchangeable Driven Adapters:
-* **`DirectQueueIngressAdapter`:** Ingests events from an in-memory `asyncio.Queue` or Python generator. Used for mock testing and deterministic replay.
+Concrete ingress sources map their payloads into `RawTelemetryEnvelope` via interchangeable Driven Adapters:
+* **`DirectQueueIngressAdapter`:** Ingests envelopes from an in-memory `asyncio.Queue` or Python generator. Used for mock testing and deterministic replay.
 * **`LocalJournalFileIngressAdapter`:** Directly monitors and tails local journal files on the OS filesystem using `ed-telemetry` as an imported library. Used by standalone in-process copilots without network daemons.
-* **`RemoteTelemetryApiIngressAdapter`:** Connects as a WebSocket / SSE client to an external `ed-telemetry` HTTP server (`http://localhost:8080`). Used in distributed or multi-container microservice fleet deployments.
+* **`RemoteTelemetryApiIngressAdapter`:** Connects as a WebSocket / SSE client to an external `ed-telemetry` HTTP server (`http://localhost:8080`), converting `ed_telemetry.TelemetryPayloadDTO` into `RawTelemetryEnvelope`.
 
-### 4.4 Cold-Start Startup Back-Replay Hydration
+### 4.4 Atomic Concurrency & State Synchronization
+
+* In-memory state is maintained inside `StateStore` as immutable, frozen dataclasses (`@dataclass(frozen=True, slots=True)`: `LocationSnapshot`, `VesselSnapshot`, `QuantizedFuelState`).
+* **Synchronization Contract:** The asynchronous writer thread (`TelemetryIngressWorker`) prepares new snapshots off-thread and updates the store via an atomic reference swap protected by a fine-grained reentrant lock (`threading.RLock`).
+* Readers (`facade.get_location()`) acquire an instantaneous reference to the active frozen instance. This guarantees $O(1)$ sub-microsecond non-blocking reads with zero risk of torn state or reader lock starvation.
+
+### 4.5 Cold-Start Startup Back-Replay Hydration
 
 * Upon initialization, the selected ingress adapter scans backward across the active journal log to recover the most recent milestone (`Location` or `FSDJump`) and loadout before query methods open.
 * Query getters return explicit nullable types (`LocationSnapshot | None`, `VesselSnapshot | None`) to provide strict safety for unseeded edge cases.
@@ -145,10 +169,12 @@ The concrete ingress source is completely decoupled from state reduction and sup
 
 ### Positive
 * **Zero Duplication:** The entire telemetry listening, reconnection, and deserialization lifecycle is packaged within `ed-resolver`. Consuming applications simply invoke `await facade.start()`.
+* **Hexagonal Boundary Purity:** Core domain layers depend strictly on Python standard library and local protocols (`RawTelemetryEnvelope`); no third-party transport DTOs leak into the domain core.
+* **Resilient Ingress Pipeline:** Malformed or drifting Frontier JSON lines are safely quarantined without halting the state reducer loop.
+* **Thread-Safe Non-Blocking Reads:** Frozen dataclasses and atomic pointer updates provide deterministic concurrency for high-frequency readers.
 * **Dual Operational Topologies:** Supports both embedded in-process execution (library dependency) and centralized fleet execution (standalone daemon).
 * **Pluggable Ingress:** Seamlessly switches between in-memory mock queues, local journal file watching, or remote `ed-telemetry` API streams without changing domain reducer code.
 * **Thin CLI Daemon:** `ed-resolver-daemon` is a lightweight process wrapper containing no domain rules, making it trivial to test and maintain.
-* **Hexagonal Purity:** Domain reducers remain 100% synchronous and pure; async networking and file cursors remain isolated in adapters and worker runtimes.
 
 ### Negative / Trade-offs
 * `ed-resolver` includes optional dependencies for daemon hosting (e.g., `uvicorn`, `starlette`), managed via optional dependency extras (`pip install ed-resolver[daemon]`).
