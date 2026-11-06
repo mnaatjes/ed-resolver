@@ -10,7 +10,7 @@ last_updated_at: "2026-11-06"
 * **Status:** Accepted
 * **Date:** 2026-11-06
 * **Deciders:** Michael Naatjes, Antigravity Agent
-* **Consulted:** ADR 0003, ADR 0004, ADR 0005 (`ed-integration-smoke`)
+* **Consulted:** [ADR 0002](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0002_archetype_classification_subsystem_and_registry.md), ADR 0003, ADR 0004, ADR 0005 (`ed-integration-smoke`)
 
 ---
 
@@ -91,12 +91,14 @@ How should `ed-resolver` encapsulate the background runner logic to guarantee ze
 |   +────────────────────────────────────────────────────────────────────────────+   |
 |   |                           HEXAGONAL DOMAIN CORE                            |   |
 |   |                                                                            |   |
-|   |   1. IngressClassifier (Stateless Event -> Archetype Router)               |   |
-|   |   2. Behavioral Archetype Reducers (ADR 0003 Mechanics):                  |   |
-|   |      - EpochMilestoneAggregator                                            |   |
-|   |      - ContextMutator                                                      |   |
-|   |      - EdgeTransitionDetector                                              |   |
-|   |      - MetricQuantizer                                                     |   |
+|   |   1. IngressClassifier (ADR 0002 Static Registry + Bootstrap Overrides)    |   |
+|   |      - Resolves typed event to TelemetryArchetype in O(1) time             |   |
+|   |   2. Behavioral Archetype Reducers & Dispatch (ADR 0003 Mechanics):        |   |
+|   |      - EpochMilestoneAggregator  (Spatial & Session milestones)            |   |
+|   |      - ContextMutator            (Loadout, cargo, & equipment differentials)|   |
+|   |      - EdgeTransitionDetector    (Continuous 1 Hz bitmask toggle deltas)   |   |
+|   |      - MetricQuantizer           (Continuous gauge threshold hysteresis)   |   |
+|   |      - PASSIVE Bypass Pipeline   (Non-mutating events / audit passthrough) |   |
 |   |   3. StateStore (Atomic Reference Swap of Frozen Dataclass Snapshots)      |   |
 |   +─────────────────────────────────────▲──────────────────────────────────────+   |
 |                                         │ (Driven Port: TelemetryIngressPort)      |
@@ -118,8 +120,9 @@ How should `ed-resolver` encapsulate the background runner logic to guarantee ze
 ### 4.2 Reusable Worker Runtime vs. Thin Daemon Entrypoint
 
 1. **`TelemetryIngressWorker` (Infrastructure Runtime Worker):**
-   * Encapsulates the complete background listening, stream reconnection, raw JSON deserialization (via `ed_models.parse_journal_event`), and archetype dispatch loop.
+   * Encapsulates the complete background listening, stream reconnection, raw JSON deserialization (via `ed_models.parse_journal_event`), archetype classification (via `IngressClassifier`, [ADR 0002](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0002_archetype_classification_subsystem_and_registry.md)), and archetype reduction dispatch loop.
    * **Quarantine / DLQ Policy (RISK-06):** Inbound lines that fail JSON decoding or model hydration are caught, routed to an optional quarantine logging callback, and bypassed without raising uncaught exceptions or terminating the worker loop.
+   * **Classification & Pipeline Routing ([ADR 0002](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0002_archetype_classification_subsystem_and_registry.md)):** Once deserialized into a typed `ed-models` dataclass, the event is passed to `IngressClassifier.classify(event)`. If classified as state-bearing (`EPOCH_MILESTONE`, `CONTEXT_MUTATOR`, `EDGE_TRANSITION`, `METRIC_QUANTIZER`), it routes to the respective domain reducer; if classified as `PASSIVE`, it bypasses reduction state mutation and is forwarded directly to downstream observers.
    * Exposes clean lifecycle controls: `await worker.start()` and `await worker.stop()`.
    * **For Embedded Consumers (`ed-connector`, Copilot):** Consumers instantiate `AmbientTelemetryFacade(auto_connect=True)` or call `await facade.start()`. The facade delegates to an internal `TelemetryIngressWorker` running as a background `asyncio.Task` inside the caller's event loop. Zero code duplication.
 
@@ -185,4 +188,4 @@ Concrete ingress sources map their payloads into `RawTelemetryEnvelope` via inte
 ## 6. Validation and Next Steps
 
 1. Prototype the `TelemetryIngressWorker` and pluggable adapters within `ed-integration-smoke`.
-2. Author IEEE 1016 Software Design Document (SDD-0001) detailing class contracts, `TelemetryIngressWorker` concurrency controls, and HTTP/WebSocket schema endpoints.
+2. Author IEEE 1016 Software Design Document (SDD-0001) detailing class contracts, `TelemetryIngressWorker` concurrency controls, `IngressClassifier` integration ([ADR 0002](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0002_archetype_classification_subsystem_and_registry.md)), and HTTP/WebSocket schema endpoints.

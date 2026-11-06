@@ -31,6 +31,8 @@ $$RE = P \times I$$
 | **RISK-05** | Journal Rotation & Lock Collisions Across File Watchers | OS | 2 | 3 | **6** | 🟢 Low | Active |
 | **RISK-06** | Deserialization Drift & Schema Violation on Raw Ingress | Schema | 4 | 4 | **16** | 🔴 Critical | Active |
 | **RISK-07** | Tight Ingress Transport Coupling to External Telemetry API | Arch | 4 | 3 | **12** | 🟡 Moderate | Active (ADR 0001) |
+| **RISK-08** | Archetype Taxonomy Drift on Upstream ed-models Upgrades | Schema | 4 | 3 | **12** | 🟡 Moderate | Active (ADR 0002) |
+| **RISK-09** | Ambiguous Multi-Archetype Event Overlap | Domain | 3 | 4 | **12** | 🟡 Moderate | Active (ADR 0002) |
 
 ---
 
@@ -90,3 +92,19 @@ $$RE = P \times I$$
   1. Adopt the Pluggable Ingress Port pattern (ADR 0001 Section 4.4): the domain core defines a pure `TelemetryIngressPort` accepting raw envelopes (`TelemetryPayloadDTO`).
   2. Decouple transport mechanisms into pluggable driven adapters: `DirectQueueIngressAdapter` (in-memory queues for tests/copilots), `LocalJournalFileIngressAdapter` (embedded disk tailing via `ed-telemetry` library), and `RemoteTelemetryApiIngressAdapter` (network WebSocket/SSE client).
   3. Allow consumers to select or inject the appropriate ingress adapter at bootstrap without altering domain reducer logic.
+
+### RISK-08: Archetype Taxonomy Drift on Upstream ed-models Upgrades
+* **Description:** Upgrading `ed-models` to a newer version containing newly cataloged event classes without re-running the registry generator causes new game events to resolve to `None` in `classifier.classify()`, silently dropping state transitions.
+* **Scoring:** $P=4, I=3 \rightarrow RE=12$ (Moderate).
+* **Mitigation Plan:**
+  1. Enforce ADR 0002 Two-Phase Codification Lifecycle: version-pin the architectural Markdown taxonomy matrix (`architecture/designs/archetype_taxonomy_matrix_v<version>.md`) matching the installed `ed-models` version.
+  2. Integrate `tests/architecture/test_archetype_parity.py` in CI asserting that 100% of event classes exported by `ed-models` are accounted for in `DEFAULT_ARCHETYPE_REGISTRY`.
+  3. The generator tool aborts with exit code 1 if any unmapped or obsolete event classes are detected.
+
+### RISK-09: Ambiguous Multi-Archetype Event Overlap
+* **Description:** Certain compound game events exhibit multiple operational behaviors simultaneously (e.g. `ShipyardSwapEvent` updates the active vessel milestone while mutating shipyard inventory context). Forcing an oversimplified 1:1 single-archetype mapping could discard secondary state mutations.
+* **Scoring:** $P=3, I=4 \rightarrow RE=12$ (Moderate).
+* **Mitigation Plan:**
+  1. Exhaustively document compound event handling in the version-pinned Markdown taxonomy matrix.
+  2. Allow the `IngressClassifier` or dispatch pipeline to register secondary handler hooks or route composite events across multiple reducer stages where necessary.
+  3. Validate compound state transitions in integration scenario tests.
