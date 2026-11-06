@@ -124,7 +124,41 @@ The worker manages a single supervised `asyncio.Task`:
 
 ---
 
-### 4.3 Ingress Pipeline Operations
+### 4.3 Decoupled Ingress Envelope Contract (`RawTelemetryEnvelope`)
+
+To prevent tight coupling to specific file systems or transmission protocols, the ingress boundary defines a universal, source-agnostic envelope DTO (`core/ports/envelope.py`):
+
+```python
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any, Mapping
+
+
+@dataclass(frozen=True, slots=True)
+class RawTelemetryEnvelope:
+    """Universal carrier for incoming telemetry data across all adapters."""
+
+    # 1. The raw unparsed text (JSON)
+    raw_payload: str
+
+    # 2. Timestamp recorded when the envelope entered the application boundary
+    received_at: datetime
+
+    # 3. Optional origin identifier for debugging/observability (e.g., file path or stream URI)
+    source_uri: str | None = None
+
+    # 4. Optional adapter metadata (e.g., line numbers, stream partition, transport headers)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+```
+
+**Design Rationale:**
+* **Source-Agnostic:** Does not classify file types (e.g. journal vs. snapshot). Payloads from Frontier Developments are self-describing; `ed-models` determines event structure directly from JSON content.
+* **Pure Isolation:** External transport models (e.g. `ed-telemetry` envelopes) are unpacked at the adapter boundary before reaching the worker.
+* **Immutability & Performance:** `frozen=True` prevents downstream mutation, while `slots=True` minimizes memory overhead during high-frequency telemetry bursts.
+
+---
+
+### 4.4 Ingress Pipeline Operations
 
 Inside `_run_loop()`, each incoming event traverses four sequential phases:
 
