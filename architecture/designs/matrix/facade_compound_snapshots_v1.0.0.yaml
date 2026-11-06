@@ -1,0 +1,424 @@
+version: "1.0.0"
+source_package: "ed-models"
+target_facade: "AmbientTelemetryFacade"
+
+snapshots:
+  # 1. Spatial & Celestial Navigation
+  LocationSnapshot:
+    sub_facade: "location"
+    method: "snapshot"
+    description: "Current spatial coordinates, celestial body context, and docking status"
+    milestone_events:
+      - model: "FSDJump"
+        semantics: "full_replacement"
+      - model: "Location"
+        semantics: "full_replacement"
+      - model: "CarrierJump"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "Docked"
+        patches: ["station_name", "station_type", "docked"]
+      - model: "Undocked"
+        patches: ["station_name", "station_type", "docked"]
+      - model: "SupercruiseExit"
+        patches: ["body_name", "body_id", "in_supercruise"]
+      - model: "SupercruiseEntry"
+        patches: ["in_supercruise"]
+      - model: "Touchdown"
+        patches: ["on_surface", "body_name"]
+      - model: "Liftoff"
+        patches: ["on_surface"]
+    properties:
+      system_name:
+        type: "str"
+        nullable: false
+        sources: ["FSDJump.StarSystem", "Location.StarSystem", "CarrierJump.StarSystem"]
+      system_address:
+        type: "int"
+        nullable: false
+        sources: ["FSDJump.SystemAddress", "Location.SystemAddress", "CarrierJump.SystemAddress"]
+      star_pos:
+        type: "tuple[float, float, float]"
+        nullable: false
+        sources: ["FSDJump.StarPos", "Location.StarPos"]
+      body_name:
+        type: "str"
+        nullable: true
+        sources: ["SupercruiseExit.Body", "Location.Body", "FSDJump.Body", "Touchdown.Body"]
+      body_id:
+        type: "int"
+        nullable: true
+        sources: ["SupercruiseExit.BodyID", "Location.BodyID", "FSDJump.BodyID"]
+      station_name:
+        type: "str"
+        nullable: true
+        sources: ["Docked.StationName", "Location.StationName"]
+      station_type:
+        type: "str"
+        nullable: true
+        sources: ["Docked.StationType", "Location.StationType"]
+      docked:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["Docked", "Undocked", "Location.Docked"]
+      in_supercruise:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["SupercruiseEntry", "SupercruiseExit"]
+      on_surface:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["Touchdown", "Liftoff"]
+
+  # 2. Vessel, Loadout, Suit & SRV
+  VesselSnapshot:
+    sub_facade: "vessel"
+    method: "snapshot"
+    description: "Current vessel, active loadout, suit, and SRV operational mode"
+    milestone_events:
+      - model: "Loadout"
+        semantics: "full_replacement"
+      - model: "ShipyardSwap"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "ModuleBuy"
+        patches: ["modules"]
+      - model: "ModuleSell"
+        patches: ["modules"]
+      - model: "ModuleSwap"
+        patches: ["modules"]
+      - model: "SuitLoadout"
+        patches: ["suit_name", "suit_modules"]
+      - model: "Embark"
+        patches: ["is_on_foot", "is_in_srv"]
+      - model: "Disembark"
+        patches: ["is_on_foot", "is_in_srv"]
+    properties:
+      ship_name:
+        type: "str"
+        nullable: true
+        sources: ["Loadout.ShipName", "ShipyardSwap.ShipType"]
+      ship_ident:
+        type: "str"
+        nullable: true
+        sources: ["Loadout.ShipIdent"]
+      ship_type:
+        type: "str"
+        nullable: true
+        sources: ["Loadout.Ship", "ShipyardSwap.ShipType"]
+      hull_value:
+        type: "int"
+        nullable: true
+        sources: ["Loadout.HullValue"]
+      modules_value:
+        type: "int"
+        nullable: true
+        sources: ["Loadout.ModulesValue"]
+      is_on_foot:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["Disembark", "Embark", "SuitLoadout"]
+      is_in_srv:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["LaunchSRV", "DockSRV"]
+
+  # 3. Cockpit & Continuous 1 Hz Status
+  FlightModeSnapshot:
+    sub_facade: "flight"
+    method: "snapshot"
+    description: "Continuous flight parameters, gear, hardpoints, and 1 Hz status toggles"
+    milestone_events:
+      - model: "StatusTelemetry"
+        semantics: "scalar_gauge_quantize"
+    mutator_events:
+      - model: "StatusFlags"
+        patches: ["landing_gear_down", "hardpoints_deployed", "flight_assist_off", "night_vision"]
+      - model: "StatusFlags2"
+        patches: ["glide_mode", "telepresence"]
+    properties:
+      in_supercruise:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      landing_gear_down:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      hardpoints_deployed:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      flight_assist_off:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      night_vision:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["StatusFlags"]
+      fuel_main:
+        type: "float"
+        nullable: true
+        sources: ["StatusTelemetry.fuel.fuel_main"]
+      fuel_reservoir:
+        type: "float"
+        nullable: true
+        sources: ["StatusTelemetry.fuel.fuel_reservoir"]
+
+  # 4. Cargo & Materials Inventory
+  CargoInventorySnapshot:
+    sub_facade: "cargo"
+    method: "snapshot"
+    description: "Current commodity cargo inventory, material quantities, and capacity"
+    milestone_events:
+      - model: "Cargo"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "CollectCargo"
+        patches: ["inventory", "count"]
+      - model: "EjectCargo"
+        patches: ["inventory", "count"]
+      - model: "MarketBuy"
+        patches: ["inventory", "count"]
+      - model: "MarketSell"
+        patches: ["inventory", "count"]
+      - model: "CargoTransfer"
+        patches: ["inventory", "count"]
+    properties:
+      count:
+        type: "int"
+        nullable: false
+        default: 0
+        sources: ["Cargo.Count"]
+      inventory:
+        type: "dict[str, int]"
+        nullable: false
+        default: {}
+        sources: ["Cargo.Inventory"]
+      vessel_type:
+        type: "str"
+        nullable: true
+        sources: ["Cargo.Vessel"]
+
+  # 5. Commander Persona, Credits & Legal Status
+  CommanderSnapshot:
+    sub_facade: "commander"
+    method: "snapshot"
+    description: "Commander profile, credit balance, loan status, and criminal reputation"
+    milestone_events:
+      - model: "Commander"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "Rank"
+        patches: ["combat_rank", "trade_rank", "explore_rank", "cqc_rank", "soldier_rank", "exobiologist_rank"]
+      - model: "Progress"
+        patches: ["rank_progress"]
+      - model: "Reputation"
+        patches: ["empire_rep", "federation_rep", "alliance_rep"]
+      - model: "Bounty"
+        patches: ["credits"]
+      - model: "CrimeVictim"
+        patches: ["is_wanted"]
+      - model: "CommitCrime"
+        patches: ["is_wanted", "fine", "bounty"]
+    properties:
+      name:
+        type: "str"
+        nullable: false
+        sources: ["Commander.Name"]
+      fid:
+        type: "str"
+        nullable: false
+        sources: ["Commander.FID"]
+      credits:
+        type: "int"
+        nullable: false
+        default: 0
+        sources: ["Commander.Credits"]
+      loan:
+        type: "int"
+        nullable: false
+        default: 0
+        sources: ["Commander.Loan"]
+      is_wanted:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["CommitCrime", "CrimeVictim"]
+
+  # 6. Station Context & Market Services
+  StationSnapshot:
+    sub_facade: "station"
+    method: "snapshot"
+    description: "Station services, controlling factions, market state, and outfitting availability"
+    milestone_events:
+      - model: "Docked"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "Market"
+        patches: ["market_id", "station_name"]
+      - model: "Shipyard"
+        patches: ["market_id", "station_name"]
+      - model: "Outfitting"
+        patches: ["market_id", "station_name"]
+      - model: "StationFaction"
+        patches: ["controlling_faction"]
+    properties:
+      station_name:
+        type: "str"
+        nullable: true
+        sources: ["Docked.StationName", "Market.StationName"]
+      station_type:
+        type: "str"
+        nullable: true
+        sources: ["Docked.StationType"]
+      market_id:
+        type: "int"
+        nullable: true
+        sources: ["Docked.MarketID", "Market.MarketID"]
+      controlling_faction:
+        type: "str"
+        nullable: true
+        sources: ["Docked.StationFaction.Name"]
+      has_market:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["Docked.StationServices"]
+      has_shipyard:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["Docked.StationServices"]
+      has_outfitting:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["Docked.StationServices"]
+
+  # 7. Fleet Carrier Management
+  CarrierSnapshot:
+    sub_facade: "carrier"
+    method: "snapshot"
+    description: "Fleet carrier finances, fuel capacity, jump destination, and services"
+    milestone_events:
+      - model: "CarrierBuy"
+        semantics: "full_replacement"
+      - model: "CarrierFinance"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "CarrierDepositFuel"
+        patches: ["fuel_level"]
+      - model: "CarrierJumpRequest"
+        patches: ["pending_jump_target", "pending_jump_time"]
+      - model: "CarrierJumpCancelled"
+        patches: ["pending_jump_target", "pending_jump_time"]
+      - model: "CarrierCrewServices"
+        patches: ["services"]
+    properties:
+      carrier_id:
+        type: "int"
+        nullable: true
+        sources: ["CarrierBuy.CarrierID", "CarrierFinance.CarrierID"]
+      callsign:
+        type: "str"
+        nullable: true
+        sources: ["CarrierBuy.Callsign", "CarrierFinance.Callsign"]
+      balance:
+        type: "int"
+        nullable: true
+        sources: ["CarrierFinance.CarrierBalance"]
+      fuel_level:
+        type: "int"
+        nullable: true
+        sources: ["CarrierFinance.FuelLevel", "CarrierDepositFuel.Total"]
+      pending_jump_target:
+        type: "str"
+        nullable: true
+        sources: ["CarrierJumpRequest.SystemName"]
+
+  # 8. Exploration & Celestial Body Scans
+  ExplorationSnapshot:
+    sub_facade: "exploration"
+    method: "snapshot"
+    description: "Exploration survey progress, FSS discovered bodies, and organic bio discoveries"
+    milestone_events:
+      - model: "FSDJump"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "FSSDiscoveryScan"
+        patches: ["body_count", "progress"]
+      - model: "FSSAllBodiesFound"
+        patches: ["all_bodies_found", "body_count"]
+      - model: "ScanOrganic"
+        patches: ["organic_samples"]
+      - model: "CodexEntry"
+        patches: ["codex_entries"]
+    properties:
+      system_name:
+        type: "str"
+        nullable: true
+        sources: ["FSDJump.StarSystem"]
+      body_count:
+        type: "int"
+        nullable: true
+        sources: ["FSSDiscoveryScan.BodyCount", "FSSAllBodiesFound.Count"]
+      all_bodies_found:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["FSSAllBodiesFound"]
+      organic_sample_count:
+        type: "int"
+        nullable: false
+        default: 0
+        sources: ["ScanOrganic"]
+
+  # 9. Powerplay Allegiance & Merits
+  PowerplaySnapshot:
+    sub_facade: "powerplay"
+    method: "snapshot"
+    description: "Powerplay faction pledge, active merits, rank, and weekly nominations"
+    milestone_events:
+      - model: "PowerplayJoin"
+        semantics: "full_replacement"
+    mutator_events:
+      - model: "PowerplayDefect"
+        patches: ["power", "merits"]
+      - model: "PowerplayLeave"
+        patches: ["power", "merits"]
+      - model: "PowerplayDeliver"
+        patches: ["merits"]
+      - model: "PowerplayVote"
+        patches: ["votes"]
+    properties:
+      power:
+        type: "str"
+        nullable: true
+        sources: ["PowerplayJoin.Power", "PowerplayDefect.ToPower"]
+      merits:
+        type: "int"
+        nullable: false
+        default: 0
+        sources: ["PowerplayDeliver.Merits", "PowerplayCollect.Merits"]
+      votes:
+        type: "int"
+        nullable: false
+        default: 0
+        sources: ["PowerplayVote.Votes"]
+      is_pledged:
+        type: "bool"
+        nullable: false
+        default: false
+        sources: ["PowerplayJoin", "PowerplayLeave", "PowerplayDefect"]

@@ -1,0 +1,101 @@
+version: "1.0.0"
+source_package: "ed-models"
+target_facade: "AmbientTelemetryFacade"
+
+predicates:
+  # Sub-Facade: location
+  is_docked:
+    sub_facade: "location"
+    root_alias: true
+    projected_snapshot: "LocationSnapshot"
+    projection_property: "docked"
+    fallback_value: false
+    description: "Evaluates whether the commander is currently docked at any station, planetary outpost, or fleet carrier."
+
+  in_supercruise:
+    sub_facade: "location"
+    root_alias: true
+    projected_snapshot: "LocationSnapshot"
+    projection_property: "in_supercruise"
+    fallback_value: false
+    description: "Evaluates whether the ship is traveling in supercruise."
+
+  on_surface:
+    sub_facade: "location"
+    root_alias: false
+    projected_snapshot: "LocationSnapshot"
+    projection_property: "on_surface"
+    fallback_value: false
+    description: "Evaluates whether the vessel is touched down on a planetary body surface."
+
+  # Sub-Facade: vessel
+  is_on_foot:
+    sub_facade: "vessel"
+    root_alias: true
+    projected_snapshot: "VesselSnapshot"
+    projection_property: "is_on_foot"
+    fallback_value: false
+    description: "Evaluates whether the commander is disembarked on foot in an Odyssey environment."
+
+  is_in_srv:
+    sub_facade: "vessel"
+    root_alias: false
+    projected_snapshot: "VesselSnapshot"
+    projection_property: "is_in_srv"
+    fallback_value: false
+    description: "Evaluates whether the commander is currently operating a surface reconnaissance vehicle."
+
+  # Sub-Facade: flight
+  is_gear_down:
+    sub_facade: "flight"
+    root_alias: false
+    projected_snapshot: "FlightModeSnapshot"
+    projection_property: "landing_gear_down"
+    fallback_value: false
+    description: "Evaluates whether ship landing gear is currently extended."
+
+  are_hardpoints_deployed:
+    sub_facade: "flight"
+    root_alias: false
+    projected_snapshot: "FlightModeSnapshot"
+    projection_property: "hardpoints_deployed"
+    fallback_value: false
+    description: "Evaluates whether ship weapon hardpoints are deployed."
+
+  # Sub-Facade: cargo
+  has_cargo:
+    sub_facade: "cargo"
+    root_alias: false
+    projected_snapshot: "CargoInventorySnapshot"
+    projection_property: "count"
+    predicate_eval: "count > 0"
+    fallback_value: false
+    description: "Evaluates whether the active vessel holds one or more commodity cargo items."
+
+  # Sub-Facade: commander
+  is_wanted:
+    sub_facade: "commander"
+    root_alias: true
+    projected_snapshot: "CommanderSnapshot"
+    projection_property: "is_wanted"
+    fallback_value: false
+    description: "Evaluates whether the commander currently carries an active local criminal bounty or fine."
+
+  # Sub-Facade: carrier
+  has_carrier:
+    sub_facade: "carrier"
+    root_alias: false
+    projected_snapshot: "CarrierSnapshot"
+    projection_property: "carrier_id"
+    predicate_eval: "carrier_id is not None"
+    fallback_value: false
+    description: "Evaluates whether the commander currently owns and operates a personal fleet carrier."
+
+  # Sub-Facade: powerplay
+  is_pledged:
+    sub_facade: "powerplay"
+    root_alias: false
+    projected_snapshot: "PowerplaySnapshot"
+    projection_property: "is_pledged"
+    fallback_value: false
+    description: "Evaluates whether the commander is currently pledged to a Powerplay galactic power."

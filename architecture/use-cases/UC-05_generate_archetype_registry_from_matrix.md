@@ -12,14 +12,14 @@ last_updated_at: "2026-11-06"
 # Use-Case Specification: UC-05 Generate Archetype Registry from Matrix
 
 ## 1. Description & Goal
-Allows an engineer or CI/CD workflow to parse the human-reviewed Markdown taxonomy matrix (`architecture/designs/archetype_taxonomy_matrix_v<version>.md`), validate it against the installed `ed-models` package AST, and deterministically generate the static Python lookup dictionary (`src/ed_resolver/core/domain/classification/registry.py`).
+Allows an engineer or CI/CD workflow to parse the human-reviewed structured YAML taxonomy matrix (`architecture/designs/matrix/archetype_taxonomy_v<version>.yaml`), validate it against the installed `ed-models` package AST, and deterministically generate the static Python lookup dictionary (`src/ed_resolver/core/domain/classification/registry.py`).
 
 ## 2. Actors & Scope
 * **Primary Actor:** Repository Developer or CI/CD Release Automation runner.
 * **System Boundary:** `scripts/generate_archetype_registry.py` offline codegen tooling.
 
 ## 3. Preconditions
-* A versioned Markdown taxonomy matrix exists at `architecture/designs/archetype_taxonomy_matrix_v<version>.md` with all events classified.
+* A versioned YAML taxonomy matrix exists at `architecture/designs/matrix/archetype_taxonomy_v<version>.yaml` with all events classified.
 * The matching version of `ed-models` is installed in the active virtual environment (`.venv`).
 
 ## 4. Postconditions
@@ -27,8 +27,8 @@ Allows an engineer or CI/CD workflow to parse the human-reviewed Markdown taxono
 * On error: The generator terminates with exit code 1, emitting diagnostic logs detailing discrepancies, and does not alter the registry file.
 
 ## 5. Main Success Scenario (Basic Flow)
-1. Actor invokes `uv run python scripts/generate_archetype_registry.py --matrix architecture/designs/archetype_taxonomy_matrix_v<version>.md`.
-2. Generator parses the Markdown matrix table, extracting event names and declared archetypes.
+1. Actor invokes `uv run python scripts/generate_archetype_registry.py --matrix architecture/designs/matrix/archetype_taxonomy_v<version>.yaml`.
+2. Generator parses the structured YAML matrix, validating entries with Pydantic schemas and extracting event names and declared archetypes.
 3. Generator inspects the installed `ed-models` package hierarchy via Python AST / module introspection, discovering all concrete event model classes.
 4. Generator reconciles the matrix entries against the AST discovered models:
    * Confirms every `ed-models` event class is explicitly declared in the matrix.

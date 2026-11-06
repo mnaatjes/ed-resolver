@@ -1,0 +1,1236 @@
+version: "0.2.1"
+source_package: "ed-models"
+categories:
+  base:
+    module: "ed_models.core.domain.events.base"
+    models:
+      JournalEvent:
+        archetype: "PASSIVE"
+        fields_count: 2
+  carrier:
+    module: "ed_models.core.domain.events.carrier"
+    models:
+      CarrierBankTransfer:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      CarrierBuy:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 10
+      CarrierCrewServices:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      CarrierDepositFuel:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      CarrierDockingPermission:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      CarrierFinance:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 15
+      CarrierJump:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 42
+      CarrierJumpCancelled:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      CarrierJumpConflictsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      CarrierJumpFactionsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 11
+      CarrierJumpFactionsItemActiveStatesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 1
+      CarrierJumpFactionsItemPendingStatesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      CarrierJumpFactionsItemRecoveringStatesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      CarrierJumpRequest:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      CarrierJumpStationEconomiesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      CarrierJumpStationFaction:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 1
+      CarrierJumpSystemFaction:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      CarrierLocation:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      CarrierModulePackBuy:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      CarrierModulePackSell:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      CarrierNameChange:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      CarrierShipPackBuy:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      CarrierShipPackSell:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      CarrierStats:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 17
+      CarrierStatsCrewItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      CarrierStatsFinance:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 10
+      CarrierStatsSpaceUsage:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      CarrierTradeOrder:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 11
+      Pack:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+  combat:
+    module: "ed_models.core.domain.events.combat"
+    models:
+      Bounty:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 14
+      BountyRewardsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      CapShipBond:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      Died:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      EscapeInterdiction:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      FactionKillBond:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      FighterDestroyed:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      HeatDamage:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      HeatWarning:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      HullDamage:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      Interdicted:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      Interdiction:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      PVPKill:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      SRVDestroyed:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      ShieldState:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      ShipTargeted:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 19
+      UnderAttack:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+  exploration:
+    module: "ed_models.core.domain.events.exploration"
+    models:
+      BuyExplorationData:
+        archetype: "PASSIVE"
+        fields_count: 4
+      CodexEntry:
+        archetype: "PASSIVE"
+        fields_count: 22
+      DiscoveryScan:
+        archetype: "PASSIVE"
+        fields_count: 4
+      FSSAllBodiesFound:
+        archetype: "PASSIVE"
+        fields_count: 5
+      FSSBodySignals:
+        archetype: "PASSIVE"
+        fields_count: 6
+      FSSBodySignalsSignalsItem:
+        archetype: "PASSIVE"
+        fields_count: 3
+      FSSDiscoveryScan:
+        archetype: "PASSIVE"
+        fields_count: 7
+      FSSSignalDiscovered:
+        archetype: "PASSIVE"
+        fields_count: 17
+      MaterialCollected:
+        archetype: "PASSIVE"
+        fields_count: 6
+      MaterialDiscarded:
+        archetype: "PASSIVE"
+        fields_count: 5
+      MaterialDiscovered:
+        archetype: "PASSIVE"
+        fields_count: 6
+      MultiSellExplorationData:
+        archetype: "PASSIVE"
+        fields_count: 6
+      MultiSellExplorationDataDiscoveredItem:
+        archetype: "PASSIVE"
+        fields_count: 3
+      NavBeaconScan:
+        archetype: "PASSIVE"
+        fields_count: 4
+      ReserveLevel:
+        archetype: "PASSIVE"
+        fields_count: 0
+      Ring:
+        archetype: "PASSIVE"
+        fields_count: 7
+      RingClass:
+        archetype: "PASSIVE"
+        fields_count: 0
+      SAAScanComplete:
+        archetype: "PASSIVE"
+        fields_count: 7
+      SAASignalsFound:
+        archetype: "PASSIVE"
+        fields_count: 7
+      SAASignalsFoundGenusesItem:
+        archetype: "PASSIVE"
+        fields_count: 2
+      SAASignalsFoundSignalsItem:
+        archetype: "PASSIVE"
+        fields_count: 3
+      ScanBaryCentre:
+        archetype: "PASSIVE"
+        fields_count: 12
+      ScanBody:
+        archetype: "PASSIVE"
+        fields_count: 21
+      ScanOther:
+        archetype: "PASSIVE"
+        fields_count: 23
+      ScanPlanet:
+        archetype: "PASSIVE"
+        fields_count: 39
+      ScanPlanetAtmosphereCompositionItem:
+        archetype: "PASSIVE"
+        fields_count: 2
+      ScanPlanetComposition:
+        archetype: "PASSIVE"
+        fields_count: 3
+      ScanPlanetMaterialsItem:
+        archetype: "PASSIVE"
+        fields_count: 2
+      ScanStar:
+        archetype: "PASSIVE"
+        fields_count: 31
+      ScanType:
+        archetype: "PASSIVE"
+        fields_count: 0
+      Screenshot:
+        archetype: "PASSIVE"
+        fields_count: 11
+      SellExplorationData:
+        archetype: "PASSIVE"
+        fields_count: 7
+      SignalType:
+        archetype: "PASSIVE"
+        fields_count: 0
+  odyssey:
+    module: "ed_models.core.domain.events.odyssey"
+    models:
+      Backpack:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      BackpackChange:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      BackpackItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      BookDropship:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      BookTaxi:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      BuySuit:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      BuyWeapon:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      CancelDropship:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      CancelTaxi:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      ChangedBackpackItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      CollectItems:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      CreateSuitLoadout:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      CreateSuitLoadoutModulesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      DeleteSuitLoadout:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      Disembark:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 15
+      DropItems:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      DropshipDeploy:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      Embark:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 16
+      EmbarkCrewItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      ExtendedFCMaterials:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      ExtendedFCMaterialsItemsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      FCMaterials:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      LoadoutEquipModule:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 13
+      NewBuyMicroResources:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      OldBuyMicroResources:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      RenameSuitLoadout:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      ScanOrganic:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 12
+      SellMicroResources:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      SellOrganicData:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      SellOrganicDataBioDataItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      SellSuit:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      SellWeapon:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      ShipLocker:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      ShipLockerItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      SuitLoadout:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      SuitLoadoutModulesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      SwitchSuitLoadout:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      SwitchSuitLoadoutModulesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      TradeMicroResources:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      TransferMicroResources:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      TransferMicroResourcesTransfersItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      UpgradeSuit:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      UpgradeSuitResourcesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      UpgradeWeapon:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      UpgradeWeaponResourcesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      UseConsumable:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+  other:
+    module: "ed_models.core.domain.events.other"
+    models:
+      AfmuRepairs:
+        archetype: "PASSIVE"
+        fields_count: 6
+      ApproachSettlement:
+        archetype: "PASSIVE"
+        fields_count: 18
+      ApproachSettlementStationEconomiesItem:
+        archetype: "PASSIVE"
+        fields_count: 3
+      ApproachSettlementStationFaction:
+        archetype: "PASSIVE"
+        fields_count: 2
+      CargoTransfer:
+        archetype: "PASSIVE"
+        fields_count: 3
+      CargoTransferTransfersItem:
+        archetype: "PASSIVE"
+        fields_count: 4
+      ChangeCrewRole:
+        archetype: "PASSIVE"
+        fields_count: 3
+      CockpitBreached:
+        archetype: "PASSIVE"
+        fields_count: 2
+      ColonisationConstructionDepot:
+        archetype: "PASSIVE"
+        fields_count: 7
+      ColonisationConstructionResource:
+        archetype: "PASSIVE"
+        fields_count: 7
+      ColonisationContribution:
+        archetype: "PASSIVE"
+        fields_count: 4
+      ColonisationContributionResource:
+        archetype: "PASSIVE"
+        fields_count: 5
+      CommitCrime:
+        archetype: "PASSIVE"
+        fields_count: 8
+      Continued:
+        archetype: "PASSIVE"
+        fields_count: 3
+      CrewLaunchFighter:
+        archetype: "PASSIVE"
+        fields_count: 3
+      CrewMemberJoins:
+        archetype: "PASSIVE"
+        fields_count: 4
+      CrewMemberQuits:
+        archetype: "PASSIVE"
+        fields_count: 4
+      CrewMemberRoleChange:
+        archetype: "PASSIVE"
+        fields_count: 5
+      CrimeVictim:
+        archetype: "PASSIVE"
+        fields_count: 6
+      DataScanned:
+        archetype: "PASSIVE"
+        fields_count: 4
+      DatalinkScan:
+        archetype: "PASSIVE"
+        fields_count: 4
+      DatalinkVoucher:
+        archetype: "PASSIVE"
+        fields_count: 5
+      DockFighter:
+        archetype: "PASSIVE"
+        fields_count: 3
+      DockSRV:
+        archetype: "PASSIVE"
+        fields_count: 5
+      EndCrewSession:
+        archetype: "PASSIVE"
+        fields_count: 4
+      ExtendedModuleInfo:
+        archetype: "PASSIVE"
+        fields_count: 3
+      ExtendedModuleInfoModulesItem:
+        archetype: "PASSIVE"
+        fields_count: 4
+      FighterRebuilt:
+        archetype: "PASSIVE"
+        fields_count: 4
+      Friends:
+        archetype: "PASSIVE"
+        fields_count: 4
+      FuelScoop:
+        archetype: "PASSIVE"
+        fields_count: 4
+      JetConeBoost:
+        archetype: "PASSIVE"
+        fields_count: 3
+      JetConeDamage:
+        archetype: "PASSIVE"
+        fields_count: 4
+      JoinACrew:
+        archetype: "PASSIVE"
+        fields_count: 3
+      KickCrewMember:
+        archetype: "PASSIVE"
+        fields_count: 4
+      LaunchDrone:
+        archetype: "PASSIVE"
+        fields_count: 3
+      LaunchFighter:
+        archetype: "PASSIVE"
+        fields_count: 5
+      LaunchSRV:
+        archetype: "PASSIVE"
+        fields_count: 7
+      LegalState:
+        archetype: "PASSIVE"
+        fields_count: 0
+      ModuleInfo:
+        archetype: "PASSIVE"
+        fields_count: 2
+      Music:
+        archetype: "PASSIVE"
+        fields_count: 3
+      NpcCrewPaidWage:
+        archetype: "PASSIVE"
+        fields_count: 5
+      NpcCrewRank:
+        archetype: "PASSIVE"
+        fields_count: 5
+      Promotion:
+        archetype: "PASSIVE"
+        fields_count: 10
+      ProspectedAsteroid:
+        archetype: "PASSIVE"
+        fields_count: 8
+      ProspectedAsteroidMaterialsItem:
+        archetype: "PASSIVE"
+        fields_count: 3
+      QuitACrew:
+        archetype: "PASSIVE"
+        fields_count: 3
+      RebootRepair:
+        archetype: "PASSIVE"
+        fields_count: 3
+      ReceiveText:
+        archetype: "PASSIVE"
+        fields_count: 7
+      RepairDrone:
+        archetype: "PASSIVE"
+        fields_count: 5
+      ReservoirReplenished:
+        archetype: "PASSIVE"
+        fields_count: 4
+      Resupply:
+        archetype: "PASSIVE"
+        fields_count: 2
+      Resurrect:
+        archetype: "PASSIVE"
+        fields_count: 5
+      Scanned:
+        archetype: "PASSIVE"
+        fields_count: 3
+      SelfDestruct:
+        archetype: "PASSIVE"
+        fields_count: 2
+      SendText:
+        archetype: "PASSIVE"
+        fields_count: 6
+      Shutdown:
+        archetype: "PASSIVE"
+        fields_count: 2
+      Status:
+        archetype: "PASSIVE"
+        fields_count: 24
+      StatusDestination:
+        archetype: "PASSIVE"
+        fields_count: 3
+      StatusFuel:
+        archetype: "PASSIVE"
+        fields_count: 2
+      SupercruiseDestinationDrop:
+        archetype: "PASSIVE"
+        fields_count: 6
+      Synthesis:
+        archetype: "PASSIVE"
+        fields_count: 4
+      SynthesisMaterialsItem:
+        archetype: "PASSIVE"
+        fields_count: 4
+      SystemsShutdown:
+        archetype: "PASSIVE"
+        fields_count: 2
+      USSDrop:
+        archetype: "PASSIVE"
+        fields_count: 5
+      VehicleSwitch:
+        archetype: "PASSIVE"
+        fields_count: 3
+      WingAdd:
+        archetype: "PASSIVE"
+        fields_count: 3
+      WingInvite:
+        archetype: "PASSIVE"
+        fields_count: 3
+      WingJoin:
+        archetype: "PASSIVE"
+        fields_count: 3
+      WingLeave:
+        archetype: "PASSIVE"
+        fields_count: 2
+  powerplay:
+    module: "ed_models.core.domain.events.powerplay"
+    models:
+      DeliverPowerMicroResources:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      PowerplayCollect:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      PowerplayDefect:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      PowerplayDeliver:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      PowerplayFastTrack:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      PowerplayJoin:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      PowerplayLeave:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      PowerplayMerits:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      PowerplayRank:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      PowerplaySalary:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      PowerplayVote:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      PowerplayVoucher:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+  squadrons:
+    module: "ed_models.core.domain.events.squadrons"
+    models:
+      AppliedToSquadron:
+        archetype: "PASSIVE"
+        fields_count: 3
+      InvitedToSquadron:
+        archetype: "PASSIVE"
+        fields_count: 3
+      JoinedSquadron:
+        archetype: "PASSIVE"
+        fields_count: 4
+      LeftSquadron:
+        archetype: "PASSIVE"
+        fields_count: 4
+      SharedBookmarkToSquadron:
+        archetype: "PASSIVE"
+        fields_count: 4
+      SquadronCreated:
+        archetype: "PASSIVE"
+        fields_count: 4
+      SquadronDemotion:
+        archetype: "PASSIVE"
+        fields_count: 8
+      SquadronPromotion:
+        archetype: "PASSIVE"
+        fields_count: 8
+      SquadronStartup:
+        archetype: "PASSIVE"
+        fields_count: 7
+  startup:
+    module: "ed_models.core.domain.events.startup"
+    models:
+      Cargo:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      CargoInventoryItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      CargoVessel:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 0
+      ClearSavedGame:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 4
+      Commander:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 4
+      Fileheader:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 7
+      GameMode:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 0
+      GameModeChange:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 3
+      LoadGame:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 22
+      Loadout:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 16
+      LoadoutFuelCapacity:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      LoadoutModulesItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 11
+      LoadoutModulesItemEngineering:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 9
+      LoadoutModulesItemEngineeringModifiersItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 7
+      Material:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      Materials:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      Mission:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 7
+      Missions:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      NewCommander:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      Passengers:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 3
+      PassengersManifestItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      Powerplay:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 7
+      Progress:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 10
+      Rank:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 10
+      Reputation:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      Statistics:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 20
+      StatisticsBank_Account:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 16
+      StatisticsCQC:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      StatisticsCombat:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 27
+      StatisticsCrafting:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 15
+      StatisticsCrew:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 4
+      StatisticsCrime:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 23
+      StatisticsExobiology:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 11
+      StatisticsExploration:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 17
+      StatisticsFLEETCARRIER:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 18
+      StatisticsMaterial_Trader_Stats:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 11
+      StatisticsMining:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 3
+      StatisticsMulticrew:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      StatisticsPassengers:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      StatisticsSearch_And_Rescue:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 11
+      StatisticsSmuggling:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      StatisticsSquadron:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 24
+      StatisticsTG_ENCOUNTERS:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 7
+      StatisticsTrading:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 8
+  station:
+    module: "ed_models.core.domain.events.station"
+    models:
+      BuyAmmo:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      BuyDrones:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      CargoDepot:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 13
+      CommunityGoal:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      CommunityGoalCurrentGoalsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 15
+      CommunityGoalCurrentGoalsItemTopTier:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      CommunityGoalDiscard:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      CommunityGoalJoin:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      CommunityGoalReward:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      CrewAssign:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      CrewFire:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      CrewHire:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      EngineerApply:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      EngineerContribution:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 12
+      EngineerCraft:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 16
+      EngineerCraftIngredientsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      EngineerCraftModifiersItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      EngineerLegacyConvert:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 16
+      EngineerLegacyConvertModifiersItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      EngineerProgress:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      EngineerProgressState:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 0
+      ExtendedMarket:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      ExtendedMarketItemsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 15
+      ExtendedOutfitting:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      ExtendedOutfittingItemsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      ExtendedShipyard:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      ExtendedShipyardPriceListItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      FetchRemoteModule:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 10
+      LockedEngineer:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      Market:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      MassModuleStore:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      MassModuleStoreItemsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      MaterialTrade:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      MaterialTradePaid:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      MaterialTradeReceived:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      MissionAbandoned:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      MissionAccepted:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 28
+      MissionCompleted:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 27
+      MissionCompletedCommodityRewardItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      MissionCompletedFactionEffectsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      MissionCompletedFactionEffectsItemEffectsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      MissionCompletedFactionEffectsItemInfluenceItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      MissionCompletedMaterialsRewardItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      MissionFailed:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      MissionRedirected:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      ModuleBuy:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 14
+      ModuleBuyAndStore:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      ModuleRetrieve:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 15
+      ModuleSell:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      ModuleSellRemote:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      ModuleStore:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 14
+      ModuleSwap:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 11
+      Outfitting:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      PayBounties:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      PayFines:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      PayLegacyFines:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      RedeemVoucher:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      RedeemVoucherFactionsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      RefuelAll:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      RefuelPartial:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      Repair:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      RepairAll:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      RestockVehicle:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      ScientificResearch:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      SearchAndRescue:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      SellDrones:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      SellShipOnRebuy:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      SetUserShipName:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      ShipRedeemed:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      Shipyard:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      ShipyardBankDeposit:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      ShipyardBuy:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 11
+      ShipyardNew:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 5
+      ShipyardRedeem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      ShipyardSell:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 9
+      ShipyardSwap:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 10
+      ShipyardTransfer:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 11
+      StoredModules:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      StoredModulesItemsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 13
+      StoredShips:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      StoredShipsShipsHereItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      StoredShipsShipsRemoteItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 11
+      TechnologyBroker:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      TechnologyBrokerCommoditiesItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      TechnologyBrokerItemsUnlockedItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 2
+      TechnologyBrokerMaterialsItem:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      UnlockedEngineer:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+  status:
+    module: "ed_models.core.domain.status"
+    models:
+      StatusFlags:
+        archetype: "EDGE_TRANSITION"
+        fields_count: 0
+      StatusFlags2:
+        archetype: "EDGE_TRANSITION"
+        fields_count: 0
+      StatusTelemetry:
+        archetype: "METRIC_QUANTIZER"
+        fields_count: 22
+  trade:
+    module: "ed_models.core.domain.events.trade"
+    models:
+      AsteroidCracked:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 3
+      BuyTradeData:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+      CollectCargo:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 6
+      EjectCargo:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 7
+      MarketBuy:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 8
+      MarketSell:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 12
+      MiningRefined:
+        archetype: "CONTEXT_MUTATOR"
+        fields_count: 4
+  travel:
+    module: "ed_models.core.domain.events.travel"
+    models:
+      ApproachBody:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      Docked:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 25
+      DockedLandingPads:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 3
+      DockedStationEconomiesItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 3
+      DockedStationFaction:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      DockingCancelled:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      DockingDenied:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      DockingGranted:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      DockingRequested:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      DockingRequestedLandingPads:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 3
+      DockingTimeout:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 5
+      ExtendedNavRoute:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 3
+      FSDJump:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 36
+      FSDJumpConflictsItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 4
+      FSDJumpFactionsItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 12
+      FSDJumpFactionsItemActiveStatesItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 1
+      FSDJumpFactionsItemPendingStatesItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      FSDJumpFactionsItemRecoveringStatesItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      FSDJumpSystemFaction:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      FSDJumpThargoidWar:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      FSDTarget:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      JumpType:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 0
+      LeaveBody:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      Liftoff:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 15
+      Location:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 50
+      LocationConflictsItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 4
+      LocationFactionsItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 12
+      LocationFactionsItemActiveStatesItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 1
+      LocationFactionsItemPendingStatesItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      LocationFactionsItemRecoveringStatesItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      LocationStationEconomiesItem:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 3
+      LocationStationFaction:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      LocationSystemFaction:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      LocationThargoidWar:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      NavRoute:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      NavRouteClear:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 2
+      StartJump:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 7
+      SupercruiseEntry:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 6
+      SupercruiseExit:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 9
+      Touchdown:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 15
+      Undocked:
+        archetype: "EPOCH_MILESTONE"
+        fields_count: 7

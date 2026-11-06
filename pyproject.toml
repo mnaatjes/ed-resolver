@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "In-memory domain state synthesizer, ambient telemetry facade, and dispatch daemon for Elite Dangerous"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "ed-models",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -32,3 +34,7 @@ select = ["E", "F", "W", "I", "B", "UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = [".", "src"]
+
+[tool.uv.sources]
+ed-models = { git = "https://github.com/mnaatjes/ed-models.git", rev = "v0.2.1" }
