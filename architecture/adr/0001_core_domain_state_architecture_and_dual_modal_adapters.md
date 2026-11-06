@@ -1,13 +1,13 @@
 ---
-title: "ADR 0001: Core Domain State Architecture and Tri-Modal Driving Adapters"
-tags: ["adr", "ed-resolver", "architecture", "facade", "daemon", "cli", "hexagonal", "archetypes"]
+title: "ADR 0001: Core Domain State Architecture and Dual-Modal Driving Adapters"
+tags: ["adr", "ed-resolver", "architecture", "facade", "daemon", "hexagonal", "archetypes"]
 created_at: "2026-11-06"
 last_updated_at: "2026-11-06"
 ---
 
-# ADR 0001: Core Domain State Architecture and Tri-Modal Driving Adapters
+# ADR 0001: Core Domain State Architecture and Dual-Modal Driving Adapters
 
-* **Status:** Proposed (Draft for `ed-resolver`)
+* **Status:** Accepted
 * **Date:** 2026-11-06
 * **Deciders:** Michael Naatjes, Antigravity Agent
 * **Consulted:** ADR 0003, ADR 0004, ADR 0005 (`ed-integration-smoke`)
@@ -28,12 +28,13 @@ Downstream consumers (TUI visualizers, in-game overlays, navigation copilots, Di
 
 To prevent each consumer from repeatedly parsing raw logs, managing bitwise math, or duplicating event-reduction heuristics, a dedicated state synthesis package—`ed-resolver`—is required.
 
-However, consumers operate under radically different operational environments:
+However, consumers operate under two distinct operational environments:
 * **In-process Python applications & test suites** require a zero-overhead, zero-network, synchronous library facade.
 * **Multi-client fleets & non-Python frontends (Web, Go, Rust)** require a centralized, always-on background daemon exposing a local API without opening duplicate file handles to the journal directory.
-* **Human operators & shell scripts** require an immediate terminal CLI to inspect active state on demand.
 
-How should `ed-resolver` be architected to resolve domain state from telemetry streams while simultaneously serving these three divergent consumption patterns without duplicating core logic?
+Terminal operators and shell scripts already have standard utilities (`curl`, `jq`, `websocat`) to inspect HTTP/WebSocket endpoints; a dedicated operator CLI driving adapter introduces unnecessary maintenance overhead without unique functional value.
+
+How should `ed-resolver` be architected to resolve domain state from telemetry streams while cleanly serving both in-process and multi-client environments without duplicating core logic?
 
 ---
 
@@ -43,6 +44,7 @@ How should `ed-resolver` be architected to resolve domain state from telemetry s
 * **Passive Decoupling from `ed-models`:** `ed-models` dataclasses must remain pure, passive schema contracts; no behavioral archetype metadata or reduction logic may leak into `ed-models`.
 * **Zero Operational Friction for Python Callers:** Single-process Python apps must be able to import and run `ed-resolver` as a direct library dependency without requiring an external background daemon.
 * **Polyglot & Multi-Client Fleet Support:** Multi-app homelab environments must be able to run `ed-resolver` as a standalone daemon to eliminate redundant disk polling and expose local endpoints.
+* **Minimal Maintenance Footprint:** Avoid unnecessary operator CLI tooling where standard shell utilities (`curl`, `websocat`) provide identical inspection capabilities.
 * **Deterministic Cold-Start Resilience:** Startup back-replay hydration must guarantee immediate, valid state recovery across mid-session launches, with explicit null-safe contracts for unseeded edge cases.
 
 ---
@@ -51,16 +53,16 @@ How should `ed-resolver` be architected to resolve domain state from telemetry s
 
 * **Option 1: Pure Library Package Only (Embedded Facade).** Publish `ed-resolver` strictly as an in-process Python library. Rejected because multi-client setups would duplicate disk I/O and non-Python tools could not consume resolved state.
 * **Option 2: Standalone Microservice Daemon Only.** Build `ed-resolver` exclusively as an always-on OS background service (systemd / Docker) exposing REST/WebSocket APIs. Rejected because it introduces mandatory operational friction, IPC overhead, and background process management into simple Python scripts and integration test suites.
-* **Option 3: Tri-Modal Driving Adapter Architecture (Selected).** Structure `ed-resolver` with a pure, in-memory Hexagonal Domain Core wrapped by three distinct, co-located Driving Adapters:
+* **Option 3: Tri-Modal Adapters (Library, Daemon, Operator CLI).** Implement an embedded facade, a daemon, and a custom Click/Typer terminal CLI. Rejected because the CLI introduces redundant argument parsing, table formatting, and test overhead that standard HTTP tools (`curl`, `jq`) already provide.
+* **Option 4: Dual-Modal Driving Adapter Architecture (Selected).** Structure `ed-resolver` with a pure, in-memory Hexagonal Domain Core wrapped by exactly two distinct Driving Adapters:
   1. *The In-Process Facade Adapter* (`from ed_resolver import AmbientTelemetryFacade`)
   2. *The Standalone Daemon Adapter* (`ed-resolver-daemon` exposing HTTP/WebSocket/IPC)
-  3. *The Operator CLI Adapter* (`ed-resolver status`)
 
 ---
 
 ## 4. Decision Outcome
 
-**Chosen Option:** **Option 3: Tri-Modal Driving Adapter Architecture**.
+**Chosen Option:** **Option 4: Dual-Modal Driving Adapter Architecture**.
 
 ### 4.1 Architectural Component Hierarchy
 
@@ -70,14 +72,9 @@ How should `ed-resolver` be architected to resolve domain state from telemetry s
 |                                                                          |
 |   +───────────────────────────+     +──────────────────────────────+     |
 |   | DRIVING ADAPTER 1:        |     | DRIVING ADAPTER 2:           |     |
-|   | Embedded Python Facade    |     | Executable CLI / REST Daemon |     |
+|   | Embedded Python Facade    |     | Standalone REST/WS Daemon    |     |
 |   | (In-Process Library Mode) |     | (Background Service Mode)    |     |
 |   +─────────────┬─────────────+     +──────────────┬───────────────+     |
-|                 │                                  │                     |
-|                 │         +────────────────────────┴─────────────────+   |
-|                 │         | DRIVING ADAPTER 3:                       |   |
-|                 │         | Operator CLI Shell (`ed-resolver`)       |   |
-|                 │         +────────────────────────┬─────────────────+   |
 |                 │                                  │                     |
 |                 └─────────────────┬────────────────┘                     |
 |                                   │ drives via method invocations        |
@@ -116,32 +113,31 @@ How should `ed-resolver` be architected to resolve domain state from telemetry s
    * Upon initialization, the ingress adapter scans backward across the active journal log to recover the most recent milestone and loadout before query methods open.
    * Query getters return explicit nullable types (`LocationSnapshot | None`, `VesselSnapshot | None`) to provide strict safety for unseeded edge cases.
 
-### 4.3 The Three Driving Adapter Modes
+### 4.3 The Two Driving Adapter Modes
 
 | Mode | Invocation Pattern | Primary Use-Case | Consumer Profile |
 | :--- | :--- | :--- | :--- |
 | **1. In-Process Facade** | `from ed_resolver import AmbientTelemetryFacade`<br>`facade.get_location()` | Standalone Python apps, TUI dashboards, integration test suites. | Zero-overhead, direct memory access. |
 | **2. Standalone Daemon** | Terminal / systemd:<br>`ed-resolver-daemon --port 8989`<br>`GET /api/v1/state/location` | Centralized fleet host, multi-tool setups, Web UIs, Go/Rust tools. | Decoupled HTTP, SSE, and WebSocket endpoints. |
-| **3. Operator CLI** | Terminal command:<br>`ed-resolver status`<br>`ed-resolver watch location` | Interactive terminal debugging, shell scripting, automation. | Human operators and bash pipelines. |
 
 ---
 
 ## 5. Consequences
 
 ### Positive
-* **Unified Core Logic:** All three interaction modes execute the identical archetype classification and state reduction algorithms.
+* **Unified Core Logic:** Both interaction modes execute the identical archetype classification and state reduction algorithms.
+* **Lean Surface Area:** Eliminates custom CLI parsers, terminal formatters, and CLI test fixtures; operators use universal shell tools (`curl`, `jq`, `websocat`).
 * **Maximum Consumer Flexibility:** Callers choose their preferred integration level (direct library dependency vs. microservice daemon) based on their runtime requirements.
 * **Zero Pollution of `ed-models`:** Preserves pure hexagonal boundaries and zero-I/O invariants in upstream model packages.
 * **Resource Optimization:** Multi-tool environments can deploy a single daemon instance to eliminate redundant journal reading and disk contention.
 
 ### Negative / Trade-offs
-* Maintaining three adapter surfaces requires broader automated test coverage across library, CLI, and HTTP transport layers.
 * Standalone daemon deployments require process supervision (systemd or container lifecycle management).
+* Terminal operators inspecting state must use standard HTTP tools (`curl`) rather than a bespoke formatted command line.
 
 ---
 
 ## 6. Validation and Next Steps
 
 1. Prototype and validate the complete pipeline within `ed-integration-smoke` against live/replay journal archives.
-2. Initialize the dedicated `ed-resolver` repository and migrate this ADR to `architecture/adr/0001_core_domain_state_architecture_and_tri_modal_adapters.md`.
-3. Author IEEE 1016 Software Design Document (SDD-0001) specifying package layout, HTTP schema endpoints, and concurrency locking primitives.
+2. Author IEEE 1016 Software Design Document (SDD-0001) specifying package layout, HTTP schema endpoints, and concurrency locking primitives.

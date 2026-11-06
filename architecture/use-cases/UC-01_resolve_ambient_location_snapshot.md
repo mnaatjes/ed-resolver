@@ -12,11 +12,11 @@ last_updated_at: "2026-11-06"
 # Use-Case Specification: UC-01 Resolve Ambient Location Snapshot
 
 ## 1. Description & Goal
-Allows a downstream client (whether via Python in-process facade, HTTP REST API, or operator CLI) to synchronously retrieve the commander's current spatial location and environmental context (`LocationSnapshot`) in $O(1)$ time without parsing journal event histories.
+Allows a downstream client (via Python in-process facade or HTTP REST API) to synchronously retrieve the commander's current spatial location and environmental context (`LocationSnapshot`) in $O(1)$ time without parsing journal event histories.
 
 ## 2. Actors & Scope
-* **Primary Actor:** Downstream consumer application (e.g. TUI overlay, itinerary copilot, EDDN contract accumulator, or human operator via CLI).
-* **System Boundary:** `ed-resolver` driving adapter surfaces (`AmbientTelemetryFacade`, REST controller `GET /api/v1/state/location`, or `ed-resolver status`).
+* **Primary Actor:** Downstream consumer application (e.g. TUI overlay, itinerary copilot, EDDN contract accumulator, or terminal HTTP client).
+* **System Boundary:** `ed-resolver` driving adapter surfaces (`AmbientTelemetryFacade` or REST controller `GET /api/v1/state/location`).
 
 ## 3. Preconditions
 * The `ed-resolver` state core is initialized and running (in-process or via standalone daemon).
@@ -27,16 +27,15 @@ Allows a downstream client (whether via Python in-process facade, HTTP REST API,
 * The state core remains unmutated by the read operation.
 
 ## 5. Main Success Scenario (Basic Flow)
-1. Actor invokes `facade.get_location()` (or requests `GET /api/v1/state/location` or runs `ed-resolver location`).
+1. Actor invokes `facade.get_location()` (or requests `GET /api/v1/state/location`).
 2. The driving adapter queries the internal state store for the active location snapshot.
 3. The state store returns the current atomic, frozen `LocationSnapshot` instance.
 4. The driving adapter delivers the snapshot to the actor:
    * As a typed dataclass (in-process facade).
    * As a serialized JSON response (REST API).
-   * As formatted human-readable terminal output (CLI).
 
 ## 6. Extensions (Alternative Flows)
 * **3a. State Core Unseeded (Cold Start Without Prior Milestone):**
   1. The state store indicates that no `Location`, `FSDJump`, or `CarrierJump` milestone has been observed in the journal stream or historical log.
-  2. The driving adapter returns `None` (in-process facade), returns HTTP `204 No Content` / `null` payload (REST API), or displays `"Location: Unknown (Unseeded)"` (CLI).
+  2. The driving adapter returns `None` (in-process facade) or returns HTTP `204 No Content` / `null` payload (REST API).
   3. The caller handles the unseeded state without encountering a runtime crash or uncaught exception.
