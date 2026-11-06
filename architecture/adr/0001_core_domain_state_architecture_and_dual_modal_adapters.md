@@ -120,12 +120,29 @@ How should `ed-resolver` be architected to resolve domain state from telemetry s
 | **1. In-Process Facade** | `from ed_resolver import AmbientTelemetryFacade`<br>`facade.get_location()` | Standalone Python apps, TUI dashboards, integration test suites. | Zero-overhead, direct memory access. |
 | **2. Standalone Daemon** | Terminal / systemd:<br>`ed-resolver-daemon --port 8989`<br>`GET /api/v1/state/location` | Centralized fleet host, multi-tool setups, Web UIs, Go/Rust tools. | Decoupled HTTP, SSE, and WebSocket endpoints. |
 
+### 4.4 Pluggable Ingress Architecture (Driven Ingress Port)
+
+To eliminate rigid transport coupling to any single external service (e.g. requiring a live network daemon), the domain core defines a pure driven interface:
+
+```python
+class TelemetryIngressPort(Protocol):
+    """Driven port through which raw telemetry envelopes enter the state core."""
+    def feed(self, envelope: TelemetryPayloadDTO) -> None: ...
+```
+
+The concrete ingress source is completely decoupled from state reduction and supplied via interchangeable Driven Adapters:
+
+1. **`DirectQueueIngressAdapter`:** Ingests events from an in-memory `asyncio.Queue` or Python generator. Used for mock testing, deterministic playback, and integration within combined parent processes.
+2. **`LocalJournalFileIngressAdapter`:** Directly monitors and tails local journal files on the OS filesystem using `ed-telemetry` as an imported library. Used by standalone in-process copilots without network daemons.
+3. **`RemoteTelemetryApiIngressAdapter`:** Connects as a WebSocket / SSE client to an external `ed-telemetry` HTTP server (`http://localhost:8080`). Used in distributed or multi-container microservice fleet deployments.
+
 ---
 
 ## 5. Consequences
 
 ### Positive
 * **Unified Core Logic:** Both interaction modes execute the identical archetype classification and state reduction algorithms.
+* **Pluggable Ingress Decoupling:** Eliminates hard transport dependencies on external network daemons; supports in-memory testing, direct file reading, or network streaming without modifying the core.
 * **Lean Surface Area:** Eliminates custom CLI parsers, terminal formatters, and CLI test fixtures; operators use universal shell tools (`curl`, `jq`, `websocat`).
 * **Maximum Consumer Flexibility:** Callers choose their preferred integration level (direct library dependency vs. microservice daemon) based on their runtime requirements.
 * **Zero Pollution of `ed-models`:** Preserves pure hexagonal boundaries and zero-I/O invariants in upstream model packages.

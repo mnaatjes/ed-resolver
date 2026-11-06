@@ -29,6 +29,8 @@ $$RE = P \times I$$
 | **RISK-03** | Staging Buffer Memory Leakage Without TTL Eviction | Res | 3 | 4 | **12** | 🟡 Moderate | Active |
 | **RISK-04** | Hexagonal Core Boundary Leakage (I/O & Async Contagion) | Arch | 3 | 4 | **12** | 🟡 Moderate | Active |
 | **RISK-05** | Journal Rotation & Lock Collisions Across File Watchers | OS | 2 | 3 | **6** | 🟢 Low | Active |
+| **RISK-06** | Deserialization Drift & Schema Violation on Raw Ingress | Schema | 4 | 4 | **16** | 🔴 Critical | Active |
+| **RISK-07** | Tight Ingress Transport Coupling to External Telemetry API | Arch | 4 | 3 | **12** | 🟡 Moderate | Active (ADR 0001) |
 
 ---
 
@@ -72,3 +74,19 @@ $$RE = P \times I$$
   1. Ingress file watchers must open files in non-exclusive, shared read mode (`os.O_RDONLY | os.O_NONBLOCK`).
   2. Detect file inode and size shrink transitions to handle file truncation and rotation smoothly.
   3. Rely on tested `ed-telemetry` ingress adapters rather than custom ad-hoc file polling loops.
+
+### RISK-06: Deserialization Drift & Schema Violation on Raw Ingress
+* **Description:** Frontier game updates frequently introduce unannounced fields, alter primitive types (e.g., int vs. float vs. string), or emit malformed/partial JSON slices during game crashes. Attempting rigid deserialization on raw ingress could throw unhandled `KeyError`, `ValueError`, or JSON decode exceptions, crashing the state reduction pipeline.
+* **Scoring:** $P=4, I=4 \rightarrow RE=16$ (Critical).
+* **Mitigation Plan:**
+  1. Enforce permissive payload parsing: unknown or novel fields must be ignored or preserved in generic extra-attributes containers without halting execution.
+  2. Implement an ingress Dead-Letter Queue (DLQ) / quarantine buffer: unparseable lines are logged to audit storage and bypassed rather than crashing the reducer loop.
+  3. Delegate model deserialization to `ed-models` normalization interactors (`ed_models.parse_journal_event`) which incorporate canonical fallback entities.
+
+### RISK-07: Tight Ingress Transport Coupling to External Telemetry API
+* **Description:** Hardcoding `ed-resolver` to require a live network connection to an external `ed-telemetry` HTTP or WebSocket server prevents in-process execution, breaks offline/mock testing, and introduces circular startup race conditions.
+* **Scoring:** $P=4, I=3 \rightarrow RE=12$ (Moderate).
+* **Mitigation Plan:**
+  1. Adopt the Pluggable Ingress Port pattern (ADR 0001 Section 4.4): the domain core defines a pure `TelemetryIngressPort` accepting raw envelopes (`TelemetryPayloadDTO`).
+  2. Decouple transport mechanisms into pluggable driven adapters: `DirectQueueIngressAdapter` (in-memory queues for tests/copilots), `LocalJournalFileIngressAdapter` (embedded disk tailing via `ed-telemetry` library), and `RemoteTelemetryApiIngressAdapter` (network WebSocket/SSE client).
+  3. Allow consumers to select or inject the appropriate ingress adapter at bootstrap without altering domain reducer logic.
