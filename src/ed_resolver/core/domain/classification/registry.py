@@ -13,79 +13,90 @@ from types import MappingProxyType
 from typing import Any
 
 from ed_models.core.domain.events.base import JournalEvent
-from ed_models.core.domain.events.carrier import (
-    CarrierBankTransfer,
-    CarrierBuy,
-    CarrierCrewServices,
-    CarrierDepositFuel,
-    CarrierDockingPermission,
-    CarrierFinance,
+from ed_models.core.domain.events.carrier.carrier_bank_transfer import CarrierBankTransfer
+from ed_models.core.domain.events.carrier.carrier_buy import CarrierBuy
+from ed_models.core.domain.events.carrier.carrier_crew_services import CarrierCrewServices
+from ed_models.core.domain.events.carrier.carrier_deposit_fuel import CarrierDepositFuel
+from ed_models.core.domain.events.carrier.carrier_docking_permission import CarrierDockingPermission
+from ed_models.core.domain.events.carrier.carrier_finance import CarrierFinance
+from ed_models.core.domain.events.carrier.carrier_jump import (
     CarrierJump,
-    CarrierJumpCancelled,
     CarrierJumpConflictsItem,
     CarrierJumpFactionsItem,
     CarrierJumpFactionsItemActiveStatesItem,
     CarrierJumpFactionsItemPendingStatesItem,
     CarrierJumpFactionsItemRecoveringStatesItem,
-    CarrierJumpRequest,
     CarrierJumpStationEconomiesItem,
     CarrierJumpStationFaction,
     CarrierJumpSystemFaction,
-    CarrierLocation,
+)
+from ed_models.core.domain.events.carrier.carrier_jump_cancelled import CarrierJumpCancelled
+from ed_models.core.domain.events.carrier.carrier_jump_request import CarrierJumpRequest
+from ed_models.core.domain.events.carrier.carrier_location import CarrierLocation
+from ed_models.core.domain.events.carrier.carrier_module_pack import (
     CarrierModulePackBuy,
     CarrierModulePackSell,
-    CarrierNameChange,
+)
+from ed_models.core.domain.events.carrier.carrier_name_change import CarrierNameChange
+from ed_models.core.domain.events.carrier.carrier_ship_pack import (
     CarrierShipPackBuy,
     CarrierShipPackSell,
+)
+from ed_models.core.domain.events.carrier.carrier_stats import (
     CarrierStats,
     CarrierStatsCrewItem,
     CarrierStatsFinance,
     CarrierStatsSpaceUsage,
-    CarrierTradeOrder,
     Pack,
 )
-from ed_models.core.domain.events.combat import (
-    Bounty,
-    BountyRewardsItem,
-    CapShipBond,
-    Died,
-    EscapeInterdiction,
-    FactionKillBond,
-    FighterDestroyed,
-    HeatDamage,
-    HeatWarning,
-    HullDamage,
-    Interdicted,
-    Interdiction,
-    PVPKill,
-    ShieldState,
-    ShipTargeted,
-    SRVDestroyed,
-    UnderAttack,
-)
-from ed_models.core.domain.events.exploration import (
-    BuyExplorationData,
-    CodexEntry,
-    DiscoveryScan,
-    FSSAllBodiesFound,
+from ed_models.core.domain.events.carrier.carrier_trade_order import CarrierTradeOrder
+from ed_models.core.domain.events.combat.bounty import Bounty, BountyRewardsItem
+from ed_models.core.domain.events.combat.cap_ship_bond import CapShipBond
+from ed_models.core.domain.events.combat.died import Died
+from ed_models.core.domain.events.combat.escape_interdiction import EscapeInterdiction
+from ed_models.core.domain.events.combat.faction_kill_bond import FactionKillBond
+from ed_models.core.domain.events.combat.fighter_destroyed import FighterDestroyed
+from ed_models.core.domain.events.combat.heat_damage import HeatDamage
+from ed_models.core.domain.events.combat.heat_warning import HeatWarning
+from ed_models.core.domain.events.combat.hull_damage import HullDamage
+from ed_models.core.domain.events.combat.interdicted import Interdicted
+from ed_models.core.domain.events.combat.interdiction import Interdiction
+from ed_models.core.domain.events.combat.pvp_kill import PVPKill
+from ed_models.core.domain.events.combat.shield_state import ShieldState
+from ed_models.core.domain.events.combat.ship_targeted import ShipTargeted
+from ed_models.core.domain.events.combat.srv_destroyed import SRVDestroyed
+from ed_models.core.domain.events.combat.under_attack import UnderAttack
+from ed_models.core.domain.events.exploration.buy_exploration_data import BuyExplorationData
+from ed_models.core.domain.events.exploration.codex_entry import CodexEntry
+from ed_models.core.domain.events.exploration.discovery_scan import DiscoveryScan
+from ed_models.core.domain.events.exploration.fss_all_bodies_found import FSSAllBodiesFound
+from ed_models.core.domain.events.exploration.fss_body_signals import (
     FSSBodySignals,
     FSSBodySignalsSignalsItem,
-    FSSDiscoveryScan,
+)
+from ed_models.core.domain.events.exploration.fss_discovery_scan import FSSDiscoveryScan
+from ed_models.core.domain.events.exploration.fss_signal_discovered import (
     FSSSignalDiscovered,
-    MaterialCollected,
-    MaterialDiscarded,
-    MaterialDiscovered,
+    SignalType,
+)
+from ed_models.core.domain.events.exploration.material_collected import MaterialCollected
+from ed_models.core.domain.events.exploration.material_discarded import MaterialDiscarded
+from ed_models.core.domain.events.exploration.material_discovered import MaterialDiscovered
+from ed_models.core.domain.events.exploration.multi_sell_exploration_data import (
     MultiSellExplorationData,
     MultiSellExplorationDataDiscoveredItem,
-    NavBeaconScan,
-    ReserveLevel,
-    Ring,
-    RingClass,
-    SAAScanComplete,
+)
+from ed_models.core.domain.events.exploration.nav_beacon_scan import NavBeaconScan
+from ed_models.core.domain.events.exploration.saa_scan_complete import SAAScanComplete
+from ed_models.core.domain.events.exploration.saa_signals_found import (
     SAASignalsFound,
     SAASignalsFoundGenusesItem,
     SAASignalsFoundSignalsItem,
-    ScanBaryCentre,
+)
+from ed_models.core.domain.events.exploration.scan import (
+    ReserveLevel,
+    Ring,
+    RingClass,
     ScanBody,
     ScanOther,
     ScanPlanet,
@@ -94,180 +105,195 @@ from ed_models.core.domain.events.exploration import (
     ScanPlanetMaterialsItem,
     ScanStar,
     ScanType,
-    Screenshot,
-    SellExplorationData,
-    SignalType,
 )
-from ed_models.core.domain.events.odyssey import (
-    Backpack,
-    BackpackChange,
-    BackpackItem,
-    BookDropship,
-    BookTaxi,
-    BuySuit,
-    BuyWeapon,
-    CancelDropship,
-    CancelTaxi,
-    ChangedBackpackItem,
-    CollectItems,
+from ed_models.core.domain.events.exploration.scan_bary_centre import ScanBaryCentre
+from ed_models.core.domain.events.exploration.screenshot import Screenshot
+from ed_models.core.domain.events.exploration.sell_exploration_data import SellExplorationData
+from ed_models.core.domain.events.odyssey.backpack import Backpack, BackpackItem
+from ed_models.core.domain.events.odyssey.backpack_change import BackpackChange, ChangedBackpackItem
+from ed_models.core.domain.events.odyssey.book_dropship import BookDropship
+from ed_models.core.domain.events.odyssey.book_taxi import BookTaxi
+from ed_models.core.domain.events.odyssey.buy_micro_resources import (
+    NewBuyMicroResources,
+    OldBuyMicroResources,
+)
+from ed_models.core.domain.events.odyssey.buy_suit import BuySuit
+from ed_models.core.domain.events.odyssey.buy_weapon import BuyWeapon
+from ed_models.core.domain.events.odyssey.cancel_dropship import CancelDropship
+from ed_models.core.domain.events.odyssey.cancel_taxi import CancelTaxi
+from ed_models.core.domain.events.odyssey.collect_items import CollectItems
+from ed_models.core.domain.events.odyssey.create_suit_loadout import (
     CreateSuitLoadout,
     CreateSuitLoadoutModulesItem,
-    DeleteSuitLoadout,
-    Disembark,
-    DropItems,
-    DropshipDeploy,
-    Embark,
-    EmbarkCrewItem,
+)
+from ed_models.core.domain.events.odyssey.delete_suit_loadout import DeleteSuitLoadout
+from ed_models.core.domain.events.odyssey.disembark import Disembark
+from ed_models.core.domain.events.odyssey.drop_items import DropItems
+from ed_models.core.domain.events.odyssey.dropship_deploy import DropshipDeploy
+from ed_models.core.domain.events.odyssey.embark import Embark, EmbarkCrewItem
+from ed_models.core.domain.events.odyssey.fc_materials import (
     ExtendedFCMaterials,
     ExtendedFCMaterialsItemsItem,
     FCMaterials,
-    LoadoutEquipModule,
-    NewBuyMicroResources,
-    OldBuyMicroResources,
-    RenameSuitLoadout,
-    ScanOrganic,
-    SellMicroResources,
+)
+from ed_models.core.domain.events.odyssey.loadout_equip_module import LoadoutEquipModule
+from ed_models.core.domain.events.odyssey.rename_suit_loadout import RenameSuitLoadout
+from ed_models.core.domain.events.odyssey.scan_organic import ScanOrganic
+from ed_models.core.domain.events.odyssey.sell_micro_resources import SellMicroResources
+from ed_models.core.domain.events.odyssey.sell_organic_data import (
     SellOrganicData,
     SellOrganicDataBioDataItem,
-    SellSuit,
-    SellWeapon,
-    ShipLocker,
-    ShipLockerItem,
-    SuitLoadout,
-    SuitLoadoutModulesItem,
+)
+from ed_models.core.domain.events.odyssey.sell_suit import SellSuit
+from ed_models.core.domain.events.odyssey.sell_weapon import SellWeapon
+from ed_models.core.domain.events.odyssey.ship_locker import ShipLocker, ShipLockerItem
+from ed_models.core.domain.events.odyssey.suit_loadout import SuitLoadout, SuitLoadoutModulesItem
+from ed_models.core.domain.events.odyssey.switch_suit_loadout import (
     SwitchSuitLoadout,
     SwitchSuitLoadoutModulesItem,
-    TradeMicroResources,
+)
+from ed_models.core.domain.events.odyssey.trade_micro_resources import TradeMicroResources
+from ed_models.core.domain.events.odyssey.transfer_micro_resources import (
     TransferMicroResources,
     TransferMicroResourcesTransfersItem,
-    UpgradeSuit,
-    UpgradeSuitResourcesItem,
+)
+from ed_models.core.domain.events.odyssey.upgrade_suit import UpgradeSuit, UpgradeSuitResourcesItem
+from ed_models.core.domain.events.odyssey.upgrade_weapon import (
     UpgradeWeapon,
     UpgradeWeaponResourcesItem,
-    UseConsumable,
 )
-from ed_models.core.domain.events.other import (
-    AfmuRepairs,
+from ed_models.core.domain.events.odyssey.use_consumable import UseConsumable
+from ed_models.core.domain.events.other.afmu_repairs import AfmuRepairs
+from ed_models.core.domain.events.other.approach_settlement import (
     ApproachSettlement,
     ApproachSettlementStationEconomiesItem,
     ApproachSettlementStationFaction,
+)
+from ed_models.core.domain.events.other.cargo_transfer import (
     CargoTransfer,
     CargoTransferTransfersItem,
-    ChangeCrewRole,
-    CockpitBreached,
+)
+from ed_models.core.domain.events.other.change_crew_role import ChangeCrewRole
+from ed_models.core.domain.events.other.cockpit_breached import CockpitBreached
+from ed_models.core.domain.events.other.colonisation_construction_depot import (
     ColonisationConstructionDepot,
     ColonisationConstructionResource,
+)
+from ed_models.core.domain.events.other.colonisation_contribution import (
     ColonisationContribution,
     ColonisationContributionResource,
-    CommitCrime,
-    Continued,
-    CrewLaunchFighter,
-    CrewMemberJoins,
-    CrewMemberQuits,
-    CrewMemberRoleChange,
-    CrimeVictim,
-    DatalinkScan,
-    DatalinkVoucher,
-    DataScanned,
-    DockFighter,
-    DockSRV,
-    EndCrewSession,
+)
+from ed_models.core.domain.events.other.commit_crime import CommitCrime
+from ed_models.core.domain.events.other.continued import Continued
+from ed_models.core.domain.events.other.crew_launch_fighter import CrewLaunchFighter
+from ed_models.core.domain.events.other.crew_member_joins import CrewMemberJoins
+from ed_models.core.domain.events.other.crew_member_quits import CrewMemberQuits
+from ed_models.core.domain.events.other.crew_member_role_change import CrewMemberRoleChange
+from ed_models.core.domain.events.other.crime_victim import CrimeVictim
+from ed_models.core.domain.events.other.data_scanned import DataScanned
+from ed_models.core.domain.events.other.datalink_scan import DatalinkScan
+from ed_models.core.domain.events.other.datalink_voucher import DatalinkVoucher
+from ed_models.core.domain.events.other.dock_fighter import DockFighter
+from ed_models.core.domain.events.other.dock_srv import DockSRV
+from ed_models.core.domain.events.other.end_crew_session import EndCrewSession
+from ed_models.core.domain.events.other.fighter_rebuilt import FighterRebuilt
+from ed_models.core.domain.events.other.friends import Friends
+from ed_models.core.domain.events.other.fuel_scoop import FuelScoop
+from ed_models.core.domain.events.other.jet_cone_boost import JetConeBoost
+from ed_models.core.domain.events.other.jet_cone_damage import JetConeDamage
+from ed_models.core.domain.events.other.join_a_crew import JoinACrew
+from ed_models.core.domain.events.other.kick_crew_member import KickCrewMember
+from ed_models.core.domain.events.other.launch_drone import LaunchDrone
+from ed_models.core.domain.events.other.launch_fighter import LaunchFighter
+from ed_models.core.domain.events.other.launch_srv import LaunchSRV
+from ed_models.core.domain.events.other.module_info import (
     ExtendedModuleInfo,
     ExtendedModuleInfoModulesItem,
-    FighterRebuilt,
-    Friends,
-    FuelScoop,
-    JetConeBoost,
-    JetConeDamage,
-    JoinACrew,
-    KickCrewMember,
-    LaunchDrone,
-    LaunchFighter,
-    LaunchSRV,
-    LegalState,
     ModuleInfo,
-    Music,
-    NpcCrewPaidWage,
-    NpcCrewRank,
-    Promotion,
+)
+from ed_models.core.domain.events.other.music import Music
+from ed_models.core.domain.events.other.npc_crew_paid_wage import NpcCrewPaidWage
+from ed_models.core.domain.events.other.npc_crew_rank import NpcCrewRank
+from ed_models.core.domain.events.other.promotion import Promotion
+from ed_models.core.domain.events.other.prospected_asteroid import (
     ProspectedAsteroid,
     ProspectedAsteroidMaterialsItem,
-    QuitACrew,
-    RebootRepair,
-    ReceiveText,
-    RepairDrone,
-    ReservoirReplenished,
-    Resupply,
-    Resurrect,
-    Scanned,
-    SelfDestruct,
-    SendText,
-    Shutdown,
+)
+from ed_models.core.domain.events.other.quit_a_crew import QuitACrew
+from ed_models.core.domain.events.other.reboot_repair import RebootRepair
+from ed_models.core.domain.events.other.receive_text import ReceiveText
+from ed_models.core.domain.events.other.repair_drone import RepairDrone
+from ed_models.core.domain.events.other.reservoir_replenished import ReservoirReplenished
+from ed_models.core.domain.events.other.resupply import Resupply
+from ed_models.core.domain.events.other.resurrect import Resurrect
+from ed_models.core.domain.events.other.scanned import Scanned
+from ed_models.core.domain.events.other.self_destruct import SelfDestruct
+from ed_models.core.domain.events.other.send_text import SendText
+from ed_models.core.domain.events.other.shutdown import Shutdown
+from ed_models.core.domain.events.other.status import (
+    LegalState,
     Status,
     StatusDestination,
     StatusFuel,
+)
+from ed_models.core.domain.events.other.supercruise_destination_drop import (
     SupercruiseDestinationDrop,
-    Synthesis,
-    SynthesisMaterialsItem,
-    SystemsShutdown,
-    USSDrop,
-    VehicleSwitch,
-    WingAdd,
-    WingInvite,
-    WingJoin,
-    WingLeave,
 )
-from ed_models.core.domain.events.powerplay import (
+from ed_models.core.domain.events.other.synthesis import Synthesis, SynthesisMaterialsItem
+from ed_models.core.domain.events.other.systems_shutdown import SystemsShutdown
+from ed_models.core.domain.events.other.uss_drop import USSDrop
+from ed_models.core.domain.events.other.vehicle_switch import VehicleSwitch
+from ed_models.core.domain.events.other.wing_add import WingAdd
+from ed_models.core.domain.events.other.wing_invite import WingInvite
+from ed_models.core.domain.events.other.wing_join import WingJoin
+from ed_models.core.domain.events.other.wing_leave import WingLeave
+from ed_models.core.domain.events.powerplay.deliver_power_micro_resources import (
     DeliverPowerMicroResources,
-    PowerplayCollect,
-    PowerplayDefect,
-    PowerplayDeliver,
-    PowerplayFastTrack,
-    PowerplayJoin,
-    PowerplayLeave,
-    PowerplayMerits,
-    PowerplayRank,
-    PowerplaySalary,
-    PowerplayVote,
-    PowerplayVoucher,
 )
-from ed_models.core.domain.events.squadrons import (
-    AppliedToSquadron,
-    InvitedToSquadron,
-    JoinedSquadron,
-    LeftSquadron,
+from ed_models.core.domain.events.powerplay.powerplay_collect import PowerplayCollect
+from ed_models.core.domain.events.powerplay.powerplay_defect import PowerplayDefect
+from ed_models.core.domain.events.powerplay.powerplay_deliver import PowerplayDeliver
+from ed_models.core.domain.events.powerplay.powerplay_fast_track import PowerplayFastTrack
+from ed_models.core.domain.events.powerplay.powerplay_join import PowerplayJoin
+from ed_models.core.domain.events.powerplay.powerplay_leave import PowerplayLeave
+from ed_models.core.domain.events.powerplay.powerplay_merits import PowerplayMerits
+from ed_models.core.domain.events.powerplay.powerplay_rank import PowerplayRank
+from ed_models.core.domain.events.powerplay.powerplay_salary import PowerplaySalary
+from ed_models.core.domain.events.powerplay.powerplay_vote import PowerplayVote
+from ed_models.core.domain.events.powerplay.powerplay_voucher import PowerplayVoucher
+from ed_models.core.domain.events.squadrons.applied_to_squadron import AppliedToSquadron
+from ed_models.core.domain.events.squadrons.invited_to_squadron import InvitedToSquadron
+from ed_models.core.domain.events.squadrons.joined_squadron import JoinedSquadron
+from ed_models.core.domain.events.squadrons.left_squadron import LeftSquadron
+from ed_models.core.domain.events.squadrons.shared_bookmark_to_squadron import (
     SharedBookmarkToSquadron,
-    SquadronCreated,
-    SquadronDemotion,
-    SquadronPromotion,
-    SquadronStartup,
 )
-from ed_models.core.domain.events.startup import (
-    Cargo,
-    CargoInventoryItem,
-    CargoVessel,
-    ClearSavedGame,
-    Commander,
-    Fileheader,
-    GameMode,
-    GameModeChange,
-    LoadGame,
+from ed_models.core.domain.events.squadrons.squadron_created import SquadronCreated
+from ed_models.core.domain.events.squadrons.squadron_demotion import SquadronDemotion
+from ed_models.core.domain.events.squadrons.squadron_promotion import SquadronPromotion
+from ed_models.core.domain.events.squadrons.squadron_startup import SquadronStartup
+from ed_models.core.domain.events.startup.cargo import Cargo, CargoInventoryItem, CargoVessel
+from ed_models.core.domain.events.startup.clear_saved_game import ClearSavedGame
+from ed_models.core.domain.events.startup.commander import Commander
+from ed_models.core.domain.events.startup.fileheader import Fileheader
+from ed_models.core.domain.events.startup.game_mode_change import GameModeChange
+from ed_models.core.domain.events.startup.load_game import GameMode, LoadGame
+from ed_models.core.domain.events.startup.loadout import (
     Loadout,
     LoadoutFuelCapacity,
     LoadoutModulesItem,
     LoadoutModulesItemEngineering,
     LoadoutModulesItemEngineeringModifiersItem,
-    Material,
-    Materials,
-    Mission,
-    Missions,
-    NewCommander,
-    Passengers,
-    PassengersManifestItem,
-    Powerplay,
-    Progress,
-    Rank,
-    Reputation,
+)
+from ed_models.core.domain.events.startup.materials import Material, Materials
+from ed_models.core.domain.events.startup.missions import Mission, Missions
+from ed_models.core.domain.events.startup.new_commander import NewCommander
+from ed_models.core.domain.events.startup.passengers import Passengers, PassengersManifestItem
+from ed_models.core.domain.events.startup.powerplay import Powerplay
+from ed_models.core.domain.events.startup.progress import Progress
+from ed_models.core.domain.events.startup.rank import Rank
+from ed_models.core.domain.events.startup.reputation import Reputation
+from ed_models.core.domain.events.startup.statistics import (
     Statistics,
     StatisticsBank_Account,
     StatisticsCombat,
@@ -288,117 +314,144 @@ from ed_models.core.domain.events.startup import (
     StatisticsTG_ENCOUNTERS,
     StatisticsTrading,
 )
-from ed_models.core.domain.events.station import (
-    BuyAmmo,
-    BuyDrones,
-    CargoDepot,
+from ed_models.core.domain.events.station.buy_ammo import BuyAmmo
+from ed_models.core.domain.events.station.buy_drones import BuyDrones
+from ed_models.core.domain.events.station.cargo_depot import CargoDepot
+from ed_models.core.domain.events.station.community_goal import (
     CommunityGoal,
     CommunityGoalCurrentGoalsItem,
     CommunityGoalCurrentGoalsItemTopTier,
-    CommunityGoalDiscard,
-    CommunityGoalJoin,
-    CommunityGoalReward,
-    CrewAssign,
-    CrewFire,
-    CrewHire,
-    EngineerApply,
-    EngineerContribution,
+)
+from ed_models.core.domain.events.station.community_goal_discard import CommunityGoalDiscard
+from ed_models.core.domain.events.station.community_goal_join import CommunityGoalJoin
+from ed_models.core.domain.events.station.community_goal_reward import CommunityGoalReward
+from ed_models.core.domain.events.station.crew_assign import CrewAssign
+from ed_models.core.domain.events.station.crew_fire import CrewFire
+from ed_models.core.domain.events.station.crew_hire import CrewHire
+from ed_models.core.domain.events.station.engineer_apply import EngineerApply
+from ed_models.core.domain.events.station.engineer_contribution import EngineerContribution
+from ed_models.core.domain.events.station.engineer_craft import (
     EngineerCraft,
     EngineerCraftIngredientsItem,
     EngineerCraftModifiersItem,
+)
+from ed_models.core.domain.events.station.engineer_legacy_convert import (
     EngineerLegacyConvert,
     EngineerLegacyConvertModifiersItem,
+)
+from ed_models.core.domain.events.station.engineer_progress import (
     EngineerProgress,
     EngineerProgressState,
+    LockedEngineer,
+    UnlockedEngineer,
+)
+from ed_models.core.domain.events.station.fetch_remote_module import FetchRemoteModule
+from ed_models.core.domain.events.station.market import (
     ExtendedMarket,
     ExtendedMarketItemsItem,
-    ExtendedOutfitting,
-    ExtendedOutfittingItemsItem,
-    ExtendedShipyard,
-    ExtendedShipyardPriceListItem,
-    FetchRemoteModule,
-    LockedEngineer,
     Market,
+)
+from ed_models.core.domain.events.station.mass_module_store import (
     MassModuleStore,
     MassModuleStoreItemsItem,
+)
+from ed_models.core.domain.events.station.material_trade import (
     MaterialTrade,
     MaterialTradePaid,
     MaterialTradeReceived,
-    MissionAbandoned,
-    MissionAccepted,
+)
+from ed_models.core.domain.events.station.mission_abandoned import MissionAbandoned
+from ed_models.core.domain.events.station.mission_accepted import MissionAccepted
+from ed_models.core.domain.events.station.mission_completed import (
     MissionCompleted,
     MissionCompletedCommodityRewardItem,
     MissionCompletedFactionEffectsItem,
     MissionCompletedFactionEffectsItemEffectsItem,
     MissionCompletedFactionEffectsItemInfluenceItem,
     MissionCompletedMaterialsRewardItem,
-    MissionFailed,
-    MissionRedirected,
-    ModuleBuy,
-    ModuleBuyAndStore,
-    ModuleRetrieve,
-    ModuleSell,
-    ModuleSellRemote,
-    ModuleStore,
-    ModuleSwap,
+)
+from ed_models.core.domain.events.station.mission_failed import MissionFailed
+from ed_models.core.domain.events.station.mission_redirected import MissionRedirected
+from ed_models.core.domain.events.station.module_buy import ModuleBuy
+from ed_models.core.domain.events.station.module_buy_and_store import ModuleBuyAndStore
+from ed_models.core.domain.events.station.module_retrieve import ModuleRetrieve
+from ed_models.core.domain.events.station.module_sell import ModuleSell
+from ed_models.core.domain.events.station.module_sell_remote import ModuleSellRemote
+from ed_models.core.domain.events.station.module_store import ModuleStore
+from ed_models.core.domain.events.station.module_swap import ModuleSwap
+from ed_models.core.domain.events.station.outfitting import (
+    ExtendedOutfitting,
+    ExtendedOutfittingItemsItem,
     Outfitting,
-    PayBounties,
-    PayFines,
-    PayLegacyFines,
+)
+from ed_models.core.domain.events.station.pay_bounties import PayBounties
+from ed_models.core.domain.events.station.pay_fines import PayFines
+from ed_models.core.domain.events.station.pay_legacy_fines import PayLegacyFines
+from ed_models.core.domain.events.station.redeem_voucher import (
     RedeemVoucher,
     RedeemVoucherFactionsItem,
-    RefuelAll,
-    RefuelPartial,
-    Repair,
-    RepairAll,
-    RestockVehicle,
-    ScientificResearch,
-    SearchAndRescue,
-    SellDrones,
-    SellShipOnRebuy,
-    SetUserShipName,
-    ShipRedeemed,
+)
+from ed_models.core.domain.events.station.refuel_all import RefuelAll
+from ed_models.core.domain.events.station.refuel_partial import RefuelPartial
+from ed_models.core.domain.events.station.repair import Repair
+from ed_models.core.domain.events.station.repair_all import RepairAll
+from ed_models.core.domain.events.station.restock_vehicle import RestockVehicle
+from ed_models.core.domain.events.station.scientific_research import ScientificResearch
+from ed_models.core.domain.events.station.search_and_rescue import SearchAndRescue
+from ed_models.core.domain.events.station.sell_drones import SellDrones
+from ed_models.core.domain.events.station.sell_ship_on_rebuy import SellShipOnRebuy
+from ed_models.core.domain.events.station.set_user_ship_name import SetUserShipName
+from ed_models.core.domain.events.station.ship_redeemed import ShipRedeemed
+from ed_models.core.domain.events.station.shipyard import (
+    ExtendedShipyard,
+    ExtendedShipyardPriceListItem,
     Shipyard,
-    ShipyardBankDeposit,
-    ShipyardBuy,
-    ShipyardNew,
-    ShipyardRedeem,
-    ShipyardSell,
-    ShipyardSwap,
-    ShipyardTransfer,
+)
+from ed_models.core.domain.events.station.shipyard_bank_deposit import ShipyardBankDeposit
+from ed_models.core.domain.events.station.shipyard_buy import ShipyardBuy
+from ed_models.core.domain.events.station.shipyard_new import ShipyardNew
+from ed_models.core.domain.events.station.shipyard_redeem import ShipyardRedeem
+from ed_models.core.domain.events.station.shipyard_sell import ShipyardSell
+from ed_models.core.domain.events.station.shipyard_swap import ShipyardSwap
+from ed_models.core.domain.events.station.shipyard_transfer import ShipyardTransfer
+from ed_models.core.domain.events.station.stored_modules import (
     StoredModules,
     StoredModulesItemsItem,
+)
+from ed_models.core.domain.events.station.stored_ships import (
     StoredShips,
     StoredShipsShipsHereItem,
     StoredShipsShipsRemoteItem,
+)
+from ed_models.core.domain.events.station.technology_broker import (
     TechnologyBroker,
     TechnologyBrokerCommoditiesItem,
     TechnologyBrokerItemsUnlockedItem,
     TechnologyBrokerMaterialsItem,
-    UnlockedEngineer,
 )
-from ed_models.core.domain.events.trade import (
-    AsteroidCracked,
-    BuyTradeData,
-    CollectCargo,
-    EjectCargo,
-    MarketBuy,
-    MarketSell,
-    MiningRefined,
-)
-from ed_models.core.domain.events.travel import (
-    ApproachBody,
+from ed_models.core.domain.events.trade.asteroid_cracked import AsteroidCracked
+from ed_models.core.domain.events.trade.buy_trade_data import BuyTradeData
+from ed_models.core.domain.events.trade.collect_cargo import CollectCargo
+from ed_models.core.domain.events.trade.eject_cargo import EjectCargo
+from ed_models.core.domain.events.trade.market_buy import MarketBuy
+from ed_models.core.domain.events.trade.market_sell import MarketSell
+from ed_models.core.domain.events.trade.mining_refined import MiningRefined
+from ed_models.core.domain.events.travel.approach_body import ApproachBody
+from ed_models.core.domain.events.travel.docked import (
     Docked,
     DockedLandingPads,
     DockedStationEconomiesItem,
     DockedStationFaction,
-    DockingCancelled,
-    DockingDenied,
-    DockingGranted,
+)
+from ed_models.core.domain.events.travel.docking_cancelled import DockingCancelled
+from ed_models.core.domain.events.travel.docking_denied import DockingDenied
+from ed_models.core.domain.events.travel.docking_granted import DockingGranted
+from ed_models.core.domain.events.travel.docking_requested import (
     DockingRequested,
     DockingRequestedLandingPads,
-    DockingTimeout,
-    ExtendedNavRoute,
+)
+from ed_models.core.domain.events.travel.docking_timeout import DockingTimeout
+from ed_models.core.domain.events.travel.fsd_jump import (
     FSDJump,
     FSDJumpConflictsItem,
     FSDJumpFactionsItem,
@@ -407,10 +460,11 @@ from ed_models.core.domain.events.travel import (
     FSDJumpFactionsItemRecoveringStatesItem,
     FSDJumpSystemFaction,
     FSDJumpThargoidWar,
-    FSDTarget,
-    JumpType,
-    LeaveBody,
-    Liftoff,
+)
+from ed_models.core.domain.events.travel.fsd_target import FSDTarget
+from ed_models.core.domain.events.travel.leave_body import LeaveBody
+from ed_models.core.domain.events.travel.liftoff import Liftoff
+from ed_models.core.domain.events.travel.location import (
     Location,
     LocationConflictsItem,
     LocationFactionsItem,
@@ -421,15 +475,16 @@ from ed_models.core.domain.events.travel import (
     LocationStationFaction,
     LocationSystemFaction,
     LocationThargoidWar,
-    NavRoute,
-    NavRouteClear,
-    StartJump,
-    SupercruiseEntry,
-    SupercruiseExit,
-    Touchdown,
-    Undocked,
 )
-from ed_models.core.domain.status import StatusFlags, StatusFlags2, StatusTelemetry
+from ed_models.core.domain.events.travel.nav_route import ExtendedNavRoute, NavRoute
+from ed_models.core.domain.events.travel.nav_route_clear import NavRouteClear
+from ed_models.core.domain.events.travel.start_jump import JumpType, StartJump
+from ed_models.core.domain.events.travel.supercruise_entry import SupercruiseEntry
+from ed_models.core.domain.events.travel.supercruise_exit import SupercruiseExit
+from ed_models.core.domain.events.travel.touchdown import Touchdown
+from ed_models.core.domain.events.travel.undocked import Undocked
+from ed_models.core.domain.status.flags import StatusFlags, StatusFlags2
+from ed_models.core.domain.status.telemetry import StatusTelemetry
 
 from ed_resolver.core.domain.archetypes import TelemetryArchetype
 
