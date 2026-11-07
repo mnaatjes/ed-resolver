@@ -232,13 +232,24 @@ Inside `_run_loop()`, each incoming event traverses four sequential phases:
 
 1. **Stream Ingestion:**
    Consumes `RawTelemetryEnvelope` items asynchronously from the configured `TelemetryIngressPort` implementation (`EdTelemetryNetworkAdapter`, `EdTelemetryInProcessAdapter`, or `MemoryQueueAdapter`).
-2. **Permissive Deserialization & Quarantine (DLQ):**
-   * Uses `ed-models` to deserialize payload JSON into typed event DTOs.
-   * If parsing fails (unknown event structure, corrupted JSON, or schema validation error), the raw envelope is not dropped silently; it is routed directly to the `QuarantineDeadLetterQueue` with error diagnostics. The worker continues executing without crashing.
-3. **Archetype Classification:**
-   * Invokes `IngressClassifier.classify(event)` to map the event to its primary `TelemetryArchetype` using the generated classification registry.
-4. **Domain State Reduction:**
-   * Passes the classified event and archetype to the synchronous `StateReducerPipeline`.
+
+2. **Permissive Deserialization Service:**
+   * Handled by the internal runtime component `TelemetryPayloadDeserializer` (`adapters/driven/runtime/deserializer.py`).
+   * Calls `ed-models` parsing functions (`parse_journal_event` and `parse_status`) to hydrate pure Python dataclasses from `envelope.raw_payload`.
+   * **Permissiveness Contract:** Frontier frequently introduces unannounced properties during game updates. `ed-models` dataclasses ignore extra, undeclared fields rather than failing validation. Deserialization strictly returns typed event instances without stopping or disrupting the worker loop.
+
+3. **Quarantine Dead-Letter Queue (Ring Buffer):**
+   * If deserialization fails (e.g. malformed JSON, truncated file writes, or unknown new Frontier event types), the envelope is never dropped silently or allowed to crash the stream.
+   * The failed envelope and exception diagnostics are routed to `QuarantineDeadLetterQueue` (`adapters/driven/runtime/quarantine.py`).
+   * **Memory Leak Prevention:** The quarantine queue is implemented as a bounded, fixed-capacity ring buffer (default: 500 entries, FIFO eviction). When capacity is exceeded, the oldest quarantined entry is purged automatically, preventing unbounded RAM consumption during long-running sessions.
+   * **Observability:** Emits structured warning logs (`logger.warning`) containing error context, source URI, and receipt timestamp without raising unhandled exceptions into the async event loop.
+
+4. **Archetype Classification (Governed by ADR 0002):**
+   * Invokes `IngressClassifier.classify(event)` to map the hydrated event to its primary `TelemetryArchetype` (`EPOCH_MILESTONE`, `CONTEXT_MUTATOR`, `EDGE_TRANSITION`, `METRIC_QUANTIZER`, or `PASSIVE`).
+   * Full taxonomy mapping specifications, offline code generation from YAML matrices, and sub-microsecond $O(1)$ dictionary lookups are governed directly by [ADR 0002: Archetype Classification Subsystem and Registry](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0002_archetype_classification_subsystem_and_registry.md).
+
+5. **Domain State Reduction:**
+   * Passes the classified event and its `TelemetryArchetype` to the synchronous `StateReducerPipeline`.
    * Updates frozen domain snapshots atomically in the `DomainStateStore`.
    * Dispatches change notifications to registered subscribers via `TelemetryNotificationPort`.
 
