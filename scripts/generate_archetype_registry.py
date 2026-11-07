@@ -82,17 +82,18 @@ def generate_registry_source(matrix_data: dict[str, Any], domains: list[Discover
         "",
     ]
 
-    # Organize imports per category module
+    # Organize imports per concrete submodule path
     categories = matrix_data["categories"]
+    modules_to_classes: dict[str, set[str]] = {}
     for d in sorted(domains, key=lambda x: x.category):
-        cat_info = categories.get(d.category)
-        if not cat_info:
-            continue
-        module_path = cat_info.get("module", d.module_path)
-        class_names = sorted(m.name for m in d.models)
+        for m in d.models:
+            modules_to_classes.setdefault(m.module, set()).add(m.name)
+
+    for mod_path in sorted(modules_to_classes.keys()):
+        class_names = sorted(modules_to_classes[mod_path])
         if class_names:
             formatted_classes = ", ".join(class_names)
-            lines.append(f"from {module_path} import ({formatted_classes})")
+            lines.append(f"from {mod_path} import ({formatted_classes})")
 
     lines.extend(
         [
