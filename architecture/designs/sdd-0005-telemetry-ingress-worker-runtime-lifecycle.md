@@ -155,11 +155,13 @@ class TelemetryIngressWorker:
         ingress_port: TelemetryIngressPort,
         classifier: IngressClassifier,
         reducer_pipeline: Any,  # StateReducerPipeline protocol
-        quarantine_queue: Any | None = None,  # QuarantineDeadLetterQueue protocol
+        deserializer: TelemetryPayloadDeserializer | None = None,
+        quarantine_queue: QuarantineDeadLetterQueue | None = None,
     ) -> None:
         self._ingress_port = ingress_port
         self._classifier = classifier
         self._reducer_pipeline = reducer_pipeline
+        self._deserializer = deserializer or TelemetryPayloadDeserializer()
         self._quarantine_queue = quarantine_queue
 
         self._task: asyncio.Task[None] | None = None
@@ -211,7 +213,7 @@ class TelemetryIngressWorker:
     async def process_envelope(self, envelope: RawTelemetryEnvelope) -> None:
         self._envelopes_received += 1
         try:
-            event = self._deserialize(envelope.raw_payload)
+            event = self._deserializer.deserialize(envelope.raw_payload)
             if event is None:
                 raise ValueError("Payload deserialized to empty event.")
 
@@ -220,7 +222,15 @@ class TelemetryIngressWorker:
             self._events_reduced += 1
             self._last_event_at = envelope.received_at
         except Exception as exc:
-            self._quarantine(envelope, exc)
+            self._quarantined_count += 1
+            if self._quarantine_queue is not None:
+                self._quarantine_queue.put(envelope, exc)
+            else:
+                logger.warning(
+                    "Payload quarantined without active DLQ: %s (Error: %s)",
+                    envelope.source_uri,
+                    exc,
+                )
 
     async def _run_loop(self) -> None:
         try:
@@ -235,21 +245,103 @@ class TelemetryIngressWorker:
             raise
         finally:
             self._is_running = False
+```
 
-    def _deserialize(self, raw_payload: str) -> Any:
-        # Deserializes JSON via ed-models entrypoint
-        ...
+---
 
-    def _quarantine(self, envelope: RawTelemetryEnvelope, error: Exception) -> None:
-        self._quarantined_count += 1
-        if self._quarantine_queue is not None:
-            self._quarantine_queue.put(envelope, error)
-        else:
-            logger.warning(
-                "Payload quarantined without active DLQ: %s (Error: %s)",
-                envelope.source_uri,
-                error,
-            )
+### 4.2 Permissive Deserializer Service (`adapters/driven/runtime/deserializer.py`)
+
+```python
+import json
+import logging
+from typing import Any
+
+from ed_models.core.domain.events.base import JournalEvent
+from ed_models.core.domain.status import ShipStatus
+from ed_models.parser import parse_journal_event, parse_status
+
+logger = logging.getLogger(__name__)
+
+
+class TelemetryPayloadDeserializer:
+    """Driven runtime service providing permissive deserialization of raw JSON into typed ed-models."""
+
+    def deserialize(self, raw_payload: str) -> JournalEvent | ShipStatus | None:
+        """Parses raw JSON string into a strongly typed ed-models event or status entity.
+
+        Permissiveness Guarantees:
+        - Extra unknown keys from new game patches are silently ignored by ed-models dataclasses.
+        - Raises ValueError or json.JSONDecodeError on malformed JSON or unrecognized event structures,
+          triggering worker quarantine routing without halting the stream.
+        """
+        data: dict[str, Any] = json.loads(raw_payload)
+
+        # 1. 1 Hz Cockpit Status Bitfields (Status.json format has 'Flags' integer)
+        if "Flags" in data:
+            return parse_status(data)
+
+        # 2. Event-driven telemetry (Journal.*.log and snapshot files with 'event' key)
+        if "event" in data:
+            return parse_journal_event(data)
+
+        raise ValueError("Payload missing recognizable telemetry markers ('event' or 'Flags').")
+```
+
+---
+
+### 4.3 Quarantine Dead-Letter Queue Ring Buffer (`adapters/driven/runtime/quarantine.py`)
+
+```python
+import logging
+from collections import deque
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
+
+from ed_resolver.core.ports.envelope import RawTelemetryEnvelope
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class QuarantinedPayload:
+    """Record of an unparseable or rejected raw telemetry envelope."""
+
+    envelope: RawTelemetryEnvelope
+    error_message: str
+    error_type: str
+    quarantined_at: datetime
+
+
+class QuarantineDeadLetterQueue:
+    """Bounded, thread-safe FIFO ring buffer isolating malformed payloads to prevent memory leaks."""
+
+    def __init__(self, max_capacity: int = 500) -> None:
+        self._max_capacity = max_capacity
+        self._buffer: deque[QuarantinedPayload] = deque(maxlen=max_capacity)
+
+    def put(self, envelope: RawTelemetryEnvelope, error: Exception) -> None:
+        """Appends quarantined payload, evicting the oldest entry if max_capacity is reached."""
+        record = QuarantinedPayload(
+            envelope=envelope,
+            error_message=str(error),
+            error_type=type(error).__name__,
+            quarantined_at=datetime.now(),
+        )
+        self._buffer.append(record)
+        logger.warning(
+            "Telemetry payload quarantined: source=%s error=%s: %s",
+            envelope.source_uri,
+            record.error_type,
+            record.error_message,
+        )
+
+    def get_recent(self, limit: int = 50) -> list[QuarantinedPayload]:
+        """Returns recent quarantined payloads up to limit."""
+        return list(self._buffer)[-limit:]
+
+    def __len__(self) -> int:
+        return len(self._buffer)
 ```
 
 ---
