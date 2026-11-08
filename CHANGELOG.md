@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Thin CLI Client & Standalone Daemon (ADR 0010 / SDD 0010):**
+  - Implemented command-line interface entrypoint in [`src/ed_resolver/daemon/cli.py`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/src/ed_resolver/daemon/cli.py) with `serve` and `status` subcommands.
+  - Registered `ed-resolver` console script in [`pyproject.toml`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/pyproject.toml).
+  - Implemented zero-dependency `TelemetryDaemonServer` in [`src/ed_resolver/daemon/server.py`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/src/ed_resolver/daemon/server.py) built on standard library `ThreadingHTTPServer`.
+  - Implemented thread-safe `EventBroadcaster` in [`src/ed_resolver/daemon/broadcaster.py`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/src/ed_resolver/daemon/broadcaster.py) for SSE fan-out streaming.
+  - Exposed REST endpoints for `/health`, `/predicates`, `/state`, and all 9 domain states (`/state/location`, `/state/vessel`, etc.).
+  - Authored authoritative OpenAPI 3.1 contract in [`architecture/api/openapi.yaml`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/api/openapi.yaml).
+  - Authored comprehensive test suite in [`tests/daemon/test_cli_and_server.py`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/tests/daemon/test_cli_and_server.py).
+- **Diátaxis Documentation Suite:**
+  - Authored consumer API reference in [`docs/reference/facade_api.md`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/docs/reference/facade_api.md).
+  - Authored installation and setup how-to guide in [`docs/how-to/install_and_setup.md`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/docs/how-to/install_and_setup.md).
+  - Authored telemetry querying recipe how-to guide in [`docs/how-to/query_ambient_telemetry.md`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/docs/how-to/query_ambient_telemetry.md).
+  - Authored quickstart telemetry listener tutorial in [`docs/tutorials/quickstart_telemetry_listener.md`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/docs/tutorials/quickstart_telemetry_listener.md).
+
 ## [0.1.0] - 2026-11-08
 
 ### Added
