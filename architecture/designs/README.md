@@ -18,3 +18,4 @@ This directory contains IEEE 1016 / Google Design Doc technical specifications f
 * [SDD 0007: In-Memory Domain State Store Subsystem](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0007-in-memory-domain-state-store.md)
 * [SDD 0008: Domain Event Reduction Pipeline and Dispatch Subsystem](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0008-domain-event-reduction-pipeline.md)
 * [SDD 0009: Ambient Telemetry Facade and Composition Root Subsystem](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0009-ambient-telemetry-facade-and-composition-root.md)
+* [SDD 0010: Thin CLI Client and Daemon HTTP/SSE Subsystem](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0010-thin-cli-client-and-daemon-subsystem.md)
