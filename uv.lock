@@ -226,6 +226,11 @@ dev = [
     { name = "ruff" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest-asyncio" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "ed-models", git = "https://github.com/mnaatjes/ed-models.git?rev=v0.2.1" },
@@ -238,6 +243,9 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7.3" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest-asyncio", specifier = ">=1.4.1.post1" }]
 
 [[package]]
 name = "filelock"
@@ -634,6 +642,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/42/da/8132aa99cee223c7c5b330ffb4bd8094343239774f917e71a21f74d52009/pytest_archon-0.0.7.tar.gz", hash = "sha256:6a1e814c84adbea4afc188369733ec898f2525cc401f3ca965498f8b3ee454d5", size = 48359, upload-time = "2025-09-19T20:56:24.784Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/98/81/a46c239c77d4ec4e3450d463517ff63f10c22962c037ca2b4125394cf400/pytest_archon-0.0.7-py3-none-any.whl", hash = "sha256:5aaad17cff853d058ca686dd1da425ce884daf33ae9668011323173631dc4e94", size = 44868, upload-time = "2025-09-19T20:56:23.16Z" },
+]
+
+[[package]]
+name = "pytest-asyncio"
+version = "1.4.1.post1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/7f/c60a4338420b33453d4f814ac0c930abd399f162b9bdd21af4b9e363037f/pytest_asyncio-1.4.1.post1.tar.gz", hash = "sha256:f582d9ea4a1c082195abe8bd29a1fe106aeb1cd435e3dad2d3bc2749935c36a2", size = 145360, upload-time = "2026-11-01T18:26:03.732Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/de/adbc7578959cfab07e5e7c05cf6d54224a51e7667ea2c07458b6bc571e75/pytest_asyncio-1.4.1.post1-py3-none-any.whl", hash = "sha256:0755e488cc0a2b9bd2eab7292cc6390d4cbb8390f1020745647bae5a708e0165", size = 17140, upload-time = "2026-11-01T18:26:02.168Z" },
 ]
 
 [[package]]

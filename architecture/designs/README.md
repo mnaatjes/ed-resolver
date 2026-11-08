@@ -13,3 +13,4 @@ This directory contains IEEE 1016 / Google Design Doc technical specifications f
 
 * [SDD 0002: Hexagonal Domain Package Layout and Archetype Classification Registry Generator](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0002-hexagonal-domain-package-layout-and-archetype-registry-generator.md)
 * [SDD 0004: Hexagonal Scope Boundary Contracts and Quality Enforcement Pipeline](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0004-hexagonal-scope-boundary-contracts-and-quality-enforcement-pipeline.md)
+* [SDD 0005: TelemetryIngressWorker Runtime and Ingress Lifecycle Subsystem](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0005-telemetry-ingress-worker-runtime-lifecycle.md)

@@ -46,7 +46,6 @@ def test_archetype_taxonomy_matrix_covers_all_ed_models() -> None:
                 }, f"Invalid archetype '{model_def['archetype']}' for model '{model.name}'"
 
     details = "\n".join(missing_models)
-    assert not missing_models, (
-        f"{len(missing_models)} models exist in ed-models but are missing from taxonomy:\n"
-        f"{details}"
-    )
+    assert (
+        not missing_models
+    ), f"{len(missing_models)} models exist in ed-models but are missing from taxonomy:\n{details}"
