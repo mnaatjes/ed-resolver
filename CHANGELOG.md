@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
 ### Added
 - **Thin CLI Client & Standalone Daemon (ADR 0010 / SDD 0010):**
   - Implemented command-line interface entrypoint in [`src/ed_resolver/daemon/cli.py`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/src/ed_resolver/daemon/cli.py) with `serve` and `status` subcommands.
