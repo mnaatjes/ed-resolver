@@ -16,6 +16,7 @@ from ed_resolver.core.errors import (
     WorkerLifecycleTimeoutError,
     WorkerNotRunningError,
 )
+from ed_resolver.core.ports.driving.reduction import ReduceTelemetryEventPort
 from ed_resolver.core.ports.envelope import RawTelemetryEnvelope
 from ed_resolver.core.ports.ingress import TelemetryIngressPort
 
@@ -29,7 +30,7 @@ class TelemetryIngressWorker:
         self,
         ingress_port: TelemetryIngressPort,
         classifier: IngressClassifier,
-        reducer_pipeline: Any,  # StateReducerPipeline protocol
+        reducer_pipeline: ReduceTelemetryEventPort | Any,
         deserializer: TelemetryPayloadDeserializer | None = None,
         quarantine_queue: QuarantineDeadLetterQueue | None = None,
     ) -> None:
