@@ -1,5 +1,6 @@
-"""Composition root and dependency injection wiring."""
+"""Bootstrap exports."""
 
 from .container import Container
+from .factory import create_resolver
 
-__all__ = ["Container"]
+__all__ = ["Container", "create_resolver"]
