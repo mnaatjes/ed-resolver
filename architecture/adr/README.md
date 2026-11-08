@@ -17,3 +17,4 @@ This directory contains the immutable Architectural Decision Records (ADRs) gove
 * [0004: Hexagonal Scope Boundary Contracts and Automated Quality Gate Enforcement](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0004_hexagonal_scope_boundary_contracts_and_quality_gates.md)
 * [0005: TelemetryIngressWorker Runtime and Ingress Lifecycle](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0005_telemetry_ingress_worker_runtime_lifecycle.md)
 * [0006: Core Domain State Model Taxonomy and Immutability Contracts](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0006_core_domain_state_model_taxonomy_and_immutability.md)
+* [0007: In-Memory Domain State Store and Atomic Swap Architecture](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0007_in_memory_domain_state_store_and_atomic_swap.md)
