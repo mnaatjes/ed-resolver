@@ -8,12 +8,21 @@ from typing import Any
 from .models import LocationState
 
 
+def _get_val(obj: Any, *keys: str, default: Any = None) -> Any:
+    for k in keys:
+        if hasattr(obj, k):
+            v = getattr(obj, k)
+            if v is not None:
+                return v
+    return default
+
+
 def reduce_location(current: LocationState, event: Any) -> LocationState:
     """Derives updated LocationState from telemetry events."""
     event_type = type(event).__name__
 
     if event_type in ("FSDJump", "Location", "CarrierJump"):
-        star_pos = getattr(event, "star_pos", None)
+        star_pos = _get_val(event, "StarPos", "star_pos")
         pos_tuple = current.star_pos
         if star_pos is not None:
             if hasattr(star_pos, "x") and hasattr(star_pos, "y") and hasattr(star_pos, "z"):
@@ -23,14 +32,16 @@ def reduce_location(current: LocationState, event: Any) -> LocationState:
 
         return dataclasses.replace(
             current,
-            system_name=getattr(event, "star_system", current.system_name),
-            system_address=getattr(event, "system_address", current.system_address),
+            system_name=_get_val(event, "StarSystem", "star_system", default=current.system_name),
+            system_address=_get_val(
+                event, "SystemAddress", "system_address", default=current.system_address
+            ),
             star_pos=pos_tuple,
-            body_name=getattr(event, "body", current.body_name),
-            body_id=getattr(event, "body_id", current.body_id),
-            station_name=getattr(event, "station_name", None),
-            station_type=getattr(event, "station_type", None),
-            docked=getattr(event, "docked", False),
+            body_name=_get_val(event, "Body", "body", default=current.body_name),
+            body_id=_get_val(event, "BodyID", "body_id", default=current.body_id),
+            station_name=_get_val(event, "StationName", "station_name"),
+            station_type=_get_val(event, "StationType", "station_type"),
+            docked=_get_val(event, "Docked", "docked", default=False),
             in_supercruise=False,
             on_surface=False,
         )
@@ -38,8 +49,12 @@ def reduce_location(current: LocationState, event: Any) -> LocationState:
     if event_type == "Docked":
         return dataclasses.replace(
             current,
-            station_name=getattr(event, "station_name", current.station_name),
-            station_type=getattr(event, "station_type", current.station_type),
+            station_name=_get_val(
+                event, "StationName", "station_name", default=current.station_name
+            ),
+            station_type=_get_val(
+                event, "StationType", "station_type", default=current.station_type
+            ),
             docked=True,
             in_supercruise=False,
         )
@@ -55,8 +70,8 @@ def reduce_location(current: LocationState, event: Any) -> LocationState:
     if event_type == "SupercruiseExit":
         return dataclasses.replace(
             current,
-            body_name=getattr(event, "body", current.body_name),
-            body_id=getattr(event, "body_id", current.body_id),
+            body_name=_get_val(event, "Body", "body", default=current.body_name),
+            body_id=_get_val(event, "BodyID", "body_id", default=current.body_id),
             in_supercruise=False,
         )
 
@@ -72,8 +87,8 @@ def reduce_location(current: LocationState, event: Any) -> LocationState:
         return dataclasses.replace(
             current,
             on_surface=True,
-            body_name=getattr(event, "body", current.body_name),
-            body_id=getattr(event, "body_id", current.body_id),
+            body_name=_get_val(event, "Body", "body", default=current.body_name),
+            body_id=_get_val(event, "BodyID", "body_id", default=current.body_id),
         )
 
     if event_type == "Liftoff":
