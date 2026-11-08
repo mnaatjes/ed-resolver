@@ -16,3 +16,4 @@ This directory contains IEEE 1016 / Google Design Doc technical specifications f
 * [SDD 0005: TelemetryIngressWorker Runtime and Ingress Lifecycle Subsystem](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0005-telemetry-ingress-worker-runtime-lifecycle.md)
 * [SDD 0006: Core Domain State Models and Immutability Subsystem](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0006-core-domain-state-models-and-immutability.md)
 * [SDD 0007: In-Memory Domain State Store Subsystem](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0007-in-memory-domain-state-store.md)
+* [SDD 0008: Domain Event Reduction Pipeline and Dispatch Subsystem](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/designs/sdd-0008-domain-event-reduction-pipeline.md)

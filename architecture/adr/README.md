@@ -18,3 +18,4 @@ This directory contains the immutable Architectural Decision Records (ADRs) gove
 * [0005: TelemetryIngressWorker Runtime and Ingress Lifecycle](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0005_telemetry_ingress_worker_runtime_lifecycle.md)
 * [0006: Core Domain State Model Taxonomy and Immutability Contracts](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0006_core_domain_state_model_taxonomy_and_immutability.md)
 * [0007: In-Memory Domain State Store and Atomic Swap Architecture](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0007_in_memory_domain_state_store_and_atomic_swap.md)
+* [0008: Domain Event Reduction Pipelines and Dispatch Architecture](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0008_domain_event_reduction_pipelines_and_dispatch.md)
