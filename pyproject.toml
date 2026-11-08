@@ -35,6 +35,7 @@ select = ["E", "F", "W", "I", "B", "UP"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [".", "src"]
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.mypy]
 python_version = "3.13"

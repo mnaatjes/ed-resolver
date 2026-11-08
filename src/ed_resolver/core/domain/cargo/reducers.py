@@ -9,23 +9,32 @@ from typing import Any
 from .models import CargoState
 
 
+def _get_val(obj: Any, *keys: str, default: Any = None) -> Any:
+    for k in keys:
+        if hasattr(obj, k):
+            v = getattr(obj, k)
+            if v is not None:
+                return v
+    return default
+
+
 def reduce_cargo(current: CargoState, event: Any) -> CargoState:
     """Derives updated CargoState from inventory and cargo events."""
     event_type = type(event).__name__
 
     if event_type == "Cargo":
         inventory_data: dict[str, int] = {}
-        raw_inv = getattr(event, "inventory", None)
+        raw_inv = _get_val(event, "Inventory", "inventory")
         if isinstance(raw_inv, list):
             for item in raw_inv:
-                name = getattr(item, "name", str(item))
-                qty = getattr(item, "count", 0)
+                name = _get_val(item, "Name", "name", default=str(item))
+                qty = _get_val(item, "Count", "count", default=0)
                 inventory_data[name] = qty
         elif isinstance(raw_inv, dict):
             inventory_data = dict(raw_inv)
 
-        count = getattr(event, "count", sum(inventory_data.values()))
-        vessel = getattr(event, "vessel", current.vessel_type)
+        count = _get_val(event, "Count", "count", default=sum(inventory_data.values()))
+        vessel = _get_val(event, "Vessel", "vessel", default=current.vessel_type)
 
         return dataclasses.replace(
             current,
@@ -35,7 +44,7 @@ def reduce_cargo(current: CargoState, event: Any) -> CargoState:
         )
 
     if event_type == "CollectCargo":
-        commodity = getattr(event, "type", "Unknown")
+        commodity = _get_val(event, "Type", "type", default="Unknown")
         inv = dict(current.inventory)
         inv[commodity] = inv.get(commodity, 0) + 1
         return dataclasses.replace(
@@ -45,8 +54,8 @@ def reduce_cargo(current: CargoState, event: Any) -> CargoState:
         )
 
     if event_type == "EjectCargo":
-        commodity = getattr(event, "type", "Unknown")
-        count_ejected = getattr(event, "count", 1)
+        commodity = _get_val(event, "Type", "type", default="Unknown")
+        count_ejected = _get_val(event, "Count", "count", default=1)
         inv = dict(current.inventory)
         if commodity in inv:
             new_qty = max(0, inv[commodity] - count_ejected)

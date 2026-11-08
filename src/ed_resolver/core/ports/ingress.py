@@ -5,11 +5,12 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Protocol, runtime_checkable
 
+from ed_resolver.core.ports.base import DrivenPort
 from ed_resolver.core.ports.envelope import RawTelemetryEnvelope
 
 
 @runtime_checkable
-class TelemetryIngressPort(Protocol):
+class TelemetryIngressPort(DrivenPort, Protocol):
     """Driven port protocol yielding continuous raw telemetry envelopes."""
 
     def stream_envelopes(self) -> AsyncIterator[RawTelemetryEnvelope]:
