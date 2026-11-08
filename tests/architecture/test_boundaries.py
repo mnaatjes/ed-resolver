@@ -202,6 +202,10 @@ def test_domain_has_zero_global_mutable_state() -> None:
         tree = ast.parse(py_file.read_text(encoding="utf-8"), filename=str(py_file))
         for node in tree.body:
             if isinstance(node, ast.Assign):
+                # Ignore dunder export manifests (e.g. __all__)
+                targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+                if "__all__" in targets:
+                    continue
                 # Flag mutable collection literals assigned at module root: list, dict, set
                 if isinstance(node.value, ast.List | ast.Dict | ast.Set):
                     raise AssertionError(
