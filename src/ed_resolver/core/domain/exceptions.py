@@ -9,7 +9,3 @@ class DomainError(Exception):
 
 class DomainValidationError(DomainError):
     """Raised when an entity or value object fails invariant self-validation."""
-
-
-class HealthCheckFailedError(DomainError):
-    """Raised when an assertive operational health check fails."""
