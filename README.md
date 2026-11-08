@@ -1,5 +1,7 @@
 # Elite Dangerous Telemetry Resolver
 
+[![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)](CHANGELOG.md)
+
 In-memory domain state synthesizer, ambient telemetry facade, and dispatch daemon for Elite Dangerous
 
 ## Architectural Governance

@@ -13,7 +13,10 @@ from ed_resolver.core.domain import (
     VesselState,
 )
 
+__version__ = "0.1.0"
+
 __all__ = [
+    "__version__",
     "AmbientTelemetryFacade",
     "CargoState",
     "CarrierState",

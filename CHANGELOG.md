@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-08
+
 ### Added
 - **Domain State Models & Immutability (ADR 0006 / SDD 0006):**
   - Implemented 9 pure, frozen, slotted domain state models under [`src/ed_resolver/core/domain/`](file:///home/michael/src/github.com/mnaatjes/ed-resolver/src/ed_resolver/core/domain/): `LocationState`, `VesselState`, `FlightState`, `CargoState`, `CommanderState`, `StationState`, `CarrierState`, `ExplorationState`, and `PowerplayState`.
