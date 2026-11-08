@@ -20,3 +20,4 @@ This directory contains the immutable Architectural Decision Records (ADRs) gove
 * [0007: In-Memory Domain State Store and Atomic Swap Architecture](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0007_in_memory_domain_state_store_and_atomic_swap.md)
 * [0008: Domain Event Reduction Pipelines and Dispatch Architecture](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0008_domain_event_reduction_pipelines_and_dispatch.md)
 * [0009: Ambient Telemetry Facade Implementation and Composition Root](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0009_ambient_telemetry_facade_and_composition_root.md)
+* [0010: Thin CLI Client Entrypoint, Daemon Process Supervision, and Zero-Dependency HTTP/SSE API](file:///home/michael/src/github.com/mnaatjes/ed-resolver/architecture/adr/0010_thin_cli_client_and_daemon_api.md)

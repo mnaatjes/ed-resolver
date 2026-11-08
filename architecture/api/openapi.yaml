@@ -1,0 +1,371 @@
+openapi: 3.1.0
+info:
+  title: Elite Dangerous Telemetry Resolver Daemon API
+  version: 0.1.0
+  description: >
+    Zero-dependency HTTP and Server-Sent Events (SSE) daemon service exposing
+    synthesized Elite Dangerous ambient domain state, macro predicates, and real-time updates.
+
+servers:
+  - url: http://127.0.0.1:8989
+    description: Local daemon service instance
+
+paths:
+  /api/v1/health:
+    get:
+      summary: Service Health & Liveness Probe
+      description: Returns daemon liveness, uptime, and version metadata.
+      responses:
+        '200':
+          description: Daemon is healthy and operational.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/v1/predicates:
+    get:
+      summary: Consolidated Ambient Predicates
+      description: Returns evaluated boolean flags representing key player context.
+      responses:
+        '200':
+          description: Map of evaluated macro convenience predicates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredicatesResponse'
+
+  /api/v1/state:
+    get:
+      summary: Consolidated Domain State Snapshot
+      description: Returns all 9 domain states in a single payload.
+      responses:
+        '200':
+          description: Snapshot of all domain states.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllDomainStatesResponse'
+
+  /api/v1/state/location:
+    get:
+      summary: Spatial & Celestial Location State
+      responses:
+        '200':
+          description: Current spatial coordinates, celestial body context, and docking status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationState'
+
+  /api/v1/state/vessel:
+    get:
+      summary: Commander Vessel & Operational Mode State
+      responses:
+        '200':
+          description: Active ship, SRV, fighter, or Odyssey suit state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VesselState'
+
+  /api/v1/state/flight:
+    get:
+      summary: Flight Telemetry & Control Surfaces
+      responses:
+        '200':
+          description: Flight dynamics, landing gear, hardpoints, and avionics status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightState'
+
+  /api/v1/state/cargo:
+    get:
+      summary: Cargo Hold Inventory
+      responses:
+        '200':
+          description: Commodity inventory, vessel hold tonnage, and stolen cargo breakdown.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CargoState'
+
+  /api/v1/state/commander:
+    get:
+      summary: Commander Identity & Legal Standing
+      responses:
+        '200':
+          description: Credits, insurance loan, and criminal wanted flags.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommanderState'
+
+  /api/v1/state/station:
+    get:
+      summary: Docked Starport Services & Economy
+      responses:
+        '200':
+          description: Market, shipyard, and outfitting availability for docked station.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationState'
+
+  /api/v1/state/carrier:
+    get:
+      summary: Fleet Carrier Management
+      responses:
+        '200':
+          description: Carrier finances, fuel reserve, dock permissions, and pending jumps.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarrierState'
+
+  /api/v1/state/exploration:
+    get:
+      summary: Cartography & System Exploration Survey
+      responses:
+        '200':
+          description: System survey completion, bodies discovered, and FSS status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExplorationState'
+
+  /api/v1/state/powerplay:
+    get:
+      summary: Galactic Power Allegiance
+      responses:
+        '200':
+          description: Pledged power, standing rank, accumulated merits, and vote allocation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PowerplayState'
+
+  /api/v1/stream:
+    get:
+      summary: Real-time Telemetry State Transition Stream
+      description: Server-Sent Events (SSE) streaming updates whenever domain state mutates.
+      responses:
+        '200':
+          description: Persistent SSE event stream.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, version, timestamp, uptime_seconds]
+      properties:
+        status:
+          type: string
+          example: ok
+        version:
+          type: string
+          example: 0.1.0
+        timestamp:
+          type: string
+          format: date-time
+        uptime_seconds:
+          type: number
+          example: 124.5
+
+    PredicatesResponse:
+      type: object
+      required: [is_docked, in_supercruise, on_surface, is_on_foot, is_in_srv, is_wanted]
+      properties:
+        is_docked:
+          type: boolean
+        in_supercruise:
+          type: boolean
+        on_surface:
+          type: boolean
+        is_on_foot:
+          type: boolean
+        is_in_srv:
+          type: boolean
+        is_wanted:
+          type: boolean
+
+    AllDomainStatesResponse:
+      type: object
+      required:
+        - location
+        - vessel
+        - flight
+        - cargo
+        - commander
+        - station
+        - carrier
+        - exploration
+        - powerplay
+      properties:
+        location:
+          $ref: '#/components/schemas/LocationState'
+        vessel:
+          $ref: '#/components/schemas/VesselState'
+        flight:
+          $ref: '#/components/schemas/FlightState'
+        cargo:
+          $ref: '#/components/schemas/CargoState'
+        commander:
+          $ref: '#/components/schemas/CommanderState'
+        station:
+          $ref: '#/components/schemas/StationState'
+        carrier:
+          $ref: '#/components/schemas/CarrierState'
+        exploration:
+          $ref: '#/components/schemas/ExplorationState'
+        powerplay:
+          $ref: '#/components/schemas/PowerplayState'
+
+    LocationState:
+      type: object
+      properties:
+        star_system:
+          type: string
+        system_address:
+          type: integer
+        star_pos:
+          type: array
+          items:
+            type: number
+        body:
+          type: string
+          nullable: true
+        body_id:
+          type: integer
+          nullable: true
+        docked:
+          type: boolean
+        in_supercruise:
+          type: boolean
+        on_surface:
+          type: boolean
+        population:
+          type: integer
+        security:
+          type: string
+          nullable: true
+
+    VesselState:
+      type: object
+      properties:
+        ship_name:
+          type: string
+          nullable: true
+        ship_ident:
+          type: string
+          nullable: true
+        ship_type:
+          type: string
+          nullable: true
+        hull_health:
+          type: number
+        shield_health:
+          type: number
+        is_on_foot:
+          type: boolean
+        is_in_srv:
+          type: boolean
+
+    FlightState:
+      type: object
+      properties:
+        landing_gear_down:
+          type: boolean
+        flight_assist_off:
+          type: boolean
+        hardpoints_deployed:
+          type: boolean
+        night_vision:
+          type: boolean
+        cargo_scoop_deployed:
+          type: boolean
+        silent_running:
+          type: boolean
+
+    CargoState:
+      type: object
+      properties:
+        count:
+          type: integer
+        inventory:
+          type: object
+          additionalProperties:
+            type: integer
+
+    CommanderState:
+      type: object
+      properties:
+        commander_name:
+          type: string
+          nullable: true
+        credits:
+          type: integer
+        debt:
+          type: integer
+        is_wanted:
+          type: boolean
+
+    StationState:
+      type: object
+      properties:
+        station_name:
+          type: string
+          nullable: true
+        station_type:
+          type: string
+          nullable: true
+        has_market:
+          type: boolean
+        has_shipyard:
+          type: boolean
+        has_outfitting:
+          type: boolean
+
+    CarrierState:
+      type: object
+      properties:
+        carrier_id:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+        callsign:
+          type: string
+          nullable: true
+        fuel:
+          type: integer
+
+    ExplorationState:
+      type: object
+      properties:
+        system_name:
+          type: string
+          nullable: true
+        body_count:
+          type: integer
+        all_bodies_found:
+          type: boolean
+
+    PowerplayState:
+      type: object
+      properties:
+        power:
+          type: string
+          nullable: true
+        rank:
+          type: integer
+        merits:
+          type: integer
+        is_pledged:
+          type: boolean
