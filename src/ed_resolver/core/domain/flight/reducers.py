@@ -8,19 +8,32 @@ from typing import Any
 from .models import FlightState
 
 
+def _get_val(obj: Any, *keys: str, default: Any = None) -> Any:
+    for k in keys:
+        if hasattr(obj, k):
+            v = getattr(obj, k)
+            if v is not None:
+                return v
+    return default
+
+
 def reduce_flight(current: FlightState, event: Any) -> FlightState:
     """Derives updated FlightState from status ticks or continuous events."""
     event_type = type(event).__name__
 
-    if event_type in ("Status", "StatusEvent"):
-        flags = getattr(event, "flags", None)
-        fuel = getattr(event, "fuel", None)
+    if event_type in ("Status", "StatusEvent", "StatusTelemetry"):
+        flags = _get_val(event, "Flags", "flags")
+        fuel = _get_val(event, "Fuel", "fuel")
         fuel_main = current.fuel_main
         fuel_res = current.fuel_reservoir
 
         if fuel is not None:
-            fuel_main = getattr(fuel, "fuel_main", fuel_main)
-            fuel_res = getattr(fuel, "fuel_reservoir", fuel_res)
+            fuel_main = _get_val(fuel, "FuelMain", "fuel_main", default=fuel_main)
+            fuel_res = _get_val(fuel, "FuelReservoir", "fuel_reservoir", default=fuel_res)
+
+        # Also support direct status fields if flattened
+        fuel_main = _get_val(event, "FuelMain", "fuel_main", default=fuel_main)
+        fuel_res = _get_val(event, "FuelReservoir", "fuel_reservoir", default=fuel_res)
 
         gear = current.landing_gear_down
         hardpoints = current.hardpoints_deployed

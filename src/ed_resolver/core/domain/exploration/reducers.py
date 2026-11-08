@@ -8,6 +8,15 @@ from typing import Any
 from .models import ExplorationState
 
 
+def _get_val(obj: Any, *keys: str, default: Any = None) -> Any:
+    for k in keys:
+        if hasattr(obj, k):
+            v = getattr(obj, k)
+            if v is not None:
+                return v
+    return default
+
+
 def reduce_exploration(current: ExplorationState, event: Any) -> ExplorationState:
     """Derives updated ExplorationState from exploration survey events."""
     event_type = type(event).__name__
@@ -15,22 +24,22 @@ def reduce_exploration(current: ExplorationState, event: Any) -> ExplorationStat
     if event_type in ("FSDJump", "Location"):
         return dataclasses.replace(
             current,
-            system_name=getattr(event, "star_system", current.system_name),
-            body_count=getattr(event, "body_count", None),
+            system_name=_get_val(event, "StarSystem", "star_system", default=current.system_name),
+            body_count=_get_val(event, "BodyCount", "body_count", default=None),
             all_bodies_found=False,
         )
 
     if event_type == "FSSDiscoveryScan":
         return dataclasses.replace(
             current,
-            system_name=getattr(event, "system_name", current.system_name),
-            body_count=getattr(event, "body_count", current.body_count),
+            system_name=_get_val(event, "SystemName", "system_name", default=current.system_name),
+            body_count=_get_val(event, "BodyCount", "body_count", default=current.body_count),
         )
 
     if event_type == "FSSAllBodiesFound":
         return dataclasses.replace(
             current,
-            system_name=getattr(event, "system_name", current.system_name),
+            system_name=_get_val(event, "SystemName", "system_name", default=current.system_name),
             all_bodies_found=True,
         )
 
